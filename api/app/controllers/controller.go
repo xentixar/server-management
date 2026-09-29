@@ -1,37 +1,52 @@
 // Package controllers contains all the controllers
 package controllers
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"api/utils"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Response struct {
-	success func(message string, data any, code int)
-	error   func(message string, errors any, code int)
+	context *gin.Context
 }
 
-var context *gin.Context
-
-func response(ctx *gin.Context) Response {
-	context = ctx
-	res := Response{
-		success: success,
-		error:   error,
+func response(context *gin.Context) Response {
+	return Response{
+		context: context,
 	}
-
-	return res
 }
 
-func success(message string, data any, code int) {
-	context.JSON(code, map[string]any{
+func (r Response) success(message string, data any, code int) {
+	r.context.JSON(code, map[string]any{
 		"message": message,
 		"data":    data,
 		"success": true,
 	})
 }
 
-func error(message string, errors any, code int) {
-	context.JSON(code, map[string]any{
+func (r Response) error(message string, errors any, code int) {
+	r.context.JSON(code, map[string]any{
 		"message": message,
 		"data":    errors,
 		"success": false,
 	})
+}
+
+func validate(context *gin.Context, request any) bool {
+	if err := context.ShouldBindJSON(request); err != nil {
+		fieldErrors := utils.FormatValidationErrors(err, request)
+
+		response(context).error(
+			"Validation error",
+			fieldErrors,
+			http.StatusBadRequest,
+		)
+
+		return false
+	}
+
+	return true
 }

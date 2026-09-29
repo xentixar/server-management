@@ -1,10 +1,7 @@
 package controllers
 
 import (
-	"net/http"
-
 	"api/app/requests"
-	"api/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,10 +11,7 @@ type AuthController struct{}
 func (AuthController) Login(context *gin.Context) {
 	var loginRequest requests.LoginRequest
 
-	if err := context.ShouldBindJSON(&loginRequest); err != nil {
-		fieldErrors := utils.FormatValidationErrors(err, loginRequest)
-		response(context).error("Validation error", fieldErrors, http.StatusBadRequest)
-
+	if !validate(context, &loginRequest) {
 		return
 	}
 
@@ -28,4 +22,12 @@ func (AuthController) Login(context *gin.Context) {
 		"email":    email,
 		"password": password,
 	}, 200)
+}
+
+func (AuthController) Register(context *gin.Context) {
+	var registerRequest requests.RegisterRequest
+
+	if !validate(context, &registerRequest) {
+		return
+	}
 }
