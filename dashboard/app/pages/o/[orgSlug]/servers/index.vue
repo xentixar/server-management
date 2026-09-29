@@ -26,6 +26,10 @@ const filtered = computed(() => {
 
 function menuItems(server: Server): DropdownMenuItem[][] {
   return [[{
+    label: 'Open',
+    icon: 'i-lucide-arrow-up-right',
+    onSelect: () => navigateTo(orgHref(`/servers/${server.id}`))
+  }, {
     label: 'Delete server',
     icon: 'i-lucide-trash-2',
     color: 'error',
@@ -155,9 +159,12 @@ function onAddClick() {
             <li
               v-for="server in filtered"
               :key="server.id"
-              class="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5"
+              class="hover:bg-elevated/40 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 transition-colors sm:px-5"
             >
-              <div class="min-w-0 flex-1">
+              <NuxtLink
+                :to="orgHref(`/servers/${server.id}`)"
+                class="min-w-0 flex-1"
+              >
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="text-highlighted truncate text-sm font-medium">
                     {{ server.hostname }}
@@ -176,7 +183,7 @@ function onAddClick() {
                   · {{ server.region || 'n/a' }}
                   · {{ server.sites }} {{ server.sites === 1 ? 'site' : 'sites' }}
                 </p>
-              </div>
+              </NuxtLink>
 
               <UDropdownMenu
                 :items="menuItems(server)"

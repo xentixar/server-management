@@ -116,7 +116,7 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
     color: 'success'
   })
 
-  router.push(orgHref('/servers'))
+  router.push(orgHref(`/servers/${result.server.id}`))
 }
 
 function onTestConnection() {

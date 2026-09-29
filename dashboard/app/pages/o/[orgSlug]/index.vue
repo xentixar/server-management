@@ -211,22 +211,26 @@ function onTerraformSoon() {
               <li
                 v-for="server in overview.serversList"
                 :key="server.id"
-                class="hover:bg-elevated/40 flex items-center justify-between gap-4 px-4 py-3.5 transition-colors"
               >
-                <div class="min-w-0">
-                  <p class="text-highlighted truncate text-sm font-medium">
-                    {{ server.hostname }}
-                  </p>
-                  <p class="text-muted text-xs">
-                    {{ server.region }} · {{ server.sites }} {{ server.sites === 1 ? 'site' : 'sites' }}
-                  </p>
-                </div>
-                <UBadge
-                  :label="server.agent"
-                  :color="agentBadgeColor(server.agent)"
-                  variant="subtle"
-                  class="capitalize"
-                />
+                <NuxtLink
+                  :to="orgHref(`/servers/${server.id}`)"
+                  class="hover:bg-elevated/40 flex items-center justify-between gap-4 px-4 py-3.5 transition-colors"
+                >
+                  <div class="min-w-0">
+                    <p class="text-highlighted truncate text-sm font-medium">
+                      {{ server.hostname }}
+                    </p>
+                    <p class="text-muted text-xs">
+                      {{ server.region }} · {{ server.sites }} {{ server.sites === 1 ? 'site' : 'sites' }}
+                    </p>
+                  </div>
+                  <UBadge
+                    :label="server.agent"
+                    :color="agentBadgeColor(server.agent)"
+                    variant="subtle"
+                    class="capitalize"
+                  />
+                </NuxtLink>
               </li>
             </ul>
           </section>

@@ -120,6 +120,19 @@ export function useServers() {
     return { ok: true as const, server: removed! }
   }
 
+  function getById(id: string) {
+    return ensure(selected.value.id).find(s => s.id === id)
+  }
+
+  function setAgent(id: string, agent: Server['agent']) {
+    const server = getById(id)
+    if (!server) {
+      return { ok: false as const, error: 'Server not found.' }
+    }
+    server.agent = agent
+    return { ok: true as const, server }
+  }
+
   watch(() => selected.value.id, (id) => {
     syncUsage(ensure(id))
   }, { immediate: true })
@@ -129,6 +142,8 @@ export function useServers() {
     serverLimit,
     atCapacity,
     create,
-    remove
+    remove,
+    getById,
+    setAgent
   }
 }
