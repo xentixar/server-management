@@ -7,6 +7,7 @@ import (
 	"api/app/models"
 	"api/app/requests"
 	"api/config"
+	"api/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -21,12 +22,36 @@ func (AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	email := loginRequest.Email
-	password := loginRequest.Password
+	bgContext := context.Background()
+
+	user, err := gorm.G[models.User](config.GetDatabase()).Where("email = ?", loginRequest.Email).First(bgContext)
+	if err != nil {
+		response(ctx).error(
+			"The provided credentials doesn't match our system",
+			gin.H{},
+			http.StatusUnauthorized,
+		)
+		return
+	}
+
+	if !config.CheckPasswordHash(loginRequest.Password, user.Password) {
+		response(ctx).error(
+			"The provided credentials doesn't match our system",
+			gin.H{},
+			http.StatusUnauthorized,
+		)
+		return
+	}
+
+	token, _ := utils.GenerateToken()
+
+	_ = gorm.G[models.PersonalAccessToken](config.GetDatabase()).Create(bgContext, &models.PersonalAccessToken{
+		UserID: int(user.ID),
+		Token:  token,
+	})
 
 	response(ctx).success("Login successful!", gin.H{
-		"email":    email,
-		"password": password,
+		"access_token": token,
 	}, 200)
 }
 
@@ -52,10 +77,12 @@ func (AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
+	hashedPassword, _ := config.HashPassword(registerRequest.Password)
+
 	_ = gorm.G[models.User](config.GetDatabase()).Create(bgContext, &models.User{
 		Name:     registerRequest.Name,
 		Email:    registerRequest.Email,
-		Password: registerRequest.Password,
+		Password: hashedPassword,
 	})
 
 	response(ctx).success("User registration successful", gin.H{}, 201)
