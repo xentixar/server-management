@@ -50,7 +50,7 @@ func (AuthController) Login(ctx *gin.Context) {
 		Token:  token,
 	})
 
-	response(ctx).success("Login successful!", gin.H{
+	response(ctx).success("Login successfull!", gin.H{
 		"access_token": token,
 	}, 200)
 }
@@ -86,4 +86,13 @@ func (AuthController) Register(ctx *gin.Context) {
 	})
 
 	response(ctx).success("User registration successful", gin.H{}, 201)
+}
+
+func (AuthController) GetUser(ctx *gin.Context) {
+	user, _ := ctx.Get("user")
+	response(ctx).success(
+		"User fetched successfully!",
+		user,
+		http.StatusOK,
+	)
 }

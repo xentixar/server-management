@@ -3,6 +3,7 @@ package routes
 
 import (
 	"api/app/controllers"
+	"api/app/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,5 +17,6 @@ func Register(router *gin.RouterGroup) {
 	{
 		group.POST("/login", authController.Login)
 		group.POST("/register", authController.Register)
+		group.GET("/user", middlewares.Authenticate(), authController.GetUser)
 	}
 }
