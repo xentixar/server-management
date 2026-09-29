@@ -1,64 +1,49 @@
-# Nuxt Dashboard Template
+# Outpost dashboard
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+Nuxt frontend for **Outpost** (codename). This folder contains **only** the UI app, its scope, design notes, and frontend timeline.
 
-Get started with the Nuxt dashboard template with multiple pages, collapsible sidebar, keyboard shortcuts, light & dark mode, command palette and more, powered by [Nuxt UI](https://ui.nuxt.com).
+Platform docs (features, backend architecture, monorepo roadmap): [../docs/](../docs/) and [../README.md](../README.md).
 
-- [Live demo](https://dashboard-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+> **Current timeline:** Phase 0 — documentation and IA; template demo pages remain until Outpost screens are built. No production API integration yet.
 
-<a href="https://dashboard-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/dashboard-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png">
-    <img alt="Nuxt Dashboard Template" src="https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png">
-  </picture>
-</a>
+## Scope (summary)
 
-> The dashboard template for Vue is on https://github.com/nuxt-ui-templates/dashboard-vue.
+| In scope here | Out of scope (see root [docs/](../docs/)) |
+|---------------|---------------------------------------------|
+| Pages, layouts, components | Go API, Postgres, Redis |
+| Client validation (Zod) | Agent, bash bootstrap |
+| API client / Nitro proxy | Terraform modules |
+| Auth & org **UI** | Billing provider webhooks |
 
-## Quick Start
+Details: [docs/SCOPE.md](docs/SCOPE.md).
 
-```bash [Terminal]
-npm create nuxt@latest -- -t ui/dashboard
-```
+## Stack
 
-## Deploy your own
+- [Nuxt 4](https://nuxt.com) + [Vue 3](https://vuejs.org)
+- [Nuxt UI 4](https://ui.nuxt.com) — [dashboard template](https://dashboard-template.nuxt.dev/)
+- TypeScript, Zod, TanStack Table
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=dashboard&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fdashboard&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fdashboard-dark.png&demo-url=https%3A%2F%2Fdashboard-template.nuxt.dev%2F&demo-title=Nuxt%20Dashboard%20Template&demo-description=A%20dashboard%20template%20with%20multi-column%20layout%20for%20building%20sophisticated%20admin%20interfaces.)
+## Documentation
 
-## Setup
+| Document | Description |
+|----------|-------------|
+| [docs/README.md](docs/README.md) | Frontend doc index |
+| [docs/SCOPE.md](docs/SCOPE.md) | Boundaries and template demo inventory |
+| [docs/DESIGN.md](docs/DESIGN.md) | Navigation, flows, UI conventions |
+| [docs/API.md](docs/API.md) | How the app will talk to the control plane |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Dashboard phases and migration checklist |
 
-Make sure to install the dependencies:
+## Development
 
 ```bash
 pnpm install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-pnpm dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
+pnpm dev      # http://localhost:3000
 pnpm build
-```
-
-Locally preview production build:
-
-```bash
 pnpm preview
+pnpm lint
+pnpm typecheck
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Template demo
 
-## Renovate integration
-
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+Demo routes (Home, Inbox, Customers) and mock handlers in `server/api/` are placeholders. See [docs/ROADMAP.md](docs/ROADMAP.md) for replacement plan.
