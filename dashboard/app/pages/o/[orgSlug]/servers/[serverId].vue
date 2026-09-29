@@ -20,6 +20,10 @@ const links = computed(() => {
     icon: 'i-lucide-layout-dashboard',
     to: base,
     exact: true
+  }, {
+    label: 'Sites',
+    icon: 'i-lucide-globe',
+    to: `${base}/sites`
   }]] satisfies NavigationMenuItem[][]
 })
 </script>

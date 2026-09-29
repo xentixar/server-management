@@ -133,6 +133,15 @@ export function useServers() {
     return { ok: true as const, server }
   }
 
+  function setSitesCount(id: string, sites: number) {
+    const server = getById(id)
+    if (!server) {
+      return { ok: false as const, error: 'Server not found.' }
+    }
+    server.sites = sites
+    return { ok: true as const, server }
+  }
+
   watch(() => selected.value.id, (id) => {
     syncUsage(ensure(id))
   }, { immediate: true })
@@ -144,6 +153,7 @@ export function useServers() {
     create,
     remove,
     getById,
-    setAgent
+    setAgent,
+    setSitesCount
   }
 }
