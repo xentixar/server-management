@@ -23,8 +23,6 @@ func InitializeDatabase() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-
-	_ = db.AutoMigrate()
 }
 
 func GetDatabase() *gorm.DB {

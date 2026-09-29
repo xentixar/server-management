@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"api/app/models"
 	"api/config"
 	"api/routes"
 )
@@ -20,6 +21,8 @@ func Initialize() {
 	{
 		routes.Register(group)
 	}
+
+	_ = config.GetDatabase().AutoMigrate(&models.User{})
 }
 
 func Run() {
