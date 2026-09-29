@@ -8,5 +8,12 @@ import (
 )
 
 func Register(router *gin.RouterGroup) {
-	router.GET("/health", controllers.HealthController{}.GetHealth)
+	healthController := controllers.HealthController{}
+	authController := controllers.AuthController{}
+
+	router.GET("/health", healthController.GetHealth)
+	group := router.Group("/auth")
+	{
+		group.POST("/login", authController.Login)
+	}
 }
