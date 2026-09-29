@@ -16,115 +16,89 @@ export interface OverviewActivity {
   at: string
 }
 
-export interface OverviewServer {
-  id: string
-  hostname: string
-  region: string
-  agent: 'online' | 'offline' | 'degraded'
-  sites: number
-}
-
-export interface OrgOverview {
-  servers: number
-  sites: number
-  deploys7d: number
-  openAlerts: number
-  serversList: OverviewServer[]
-  alerts: OverviewAlert[]
-  activity: OverviewActivity[]
-}
-
-function emptyOverview(): OrgOverview {
-  return {
-    servers: 0,
-    sites: 0,
-    deploys7d: 0,
-    openAlerts: 0,
-    serversList: [],
-    alerts: [],
-    activity: []
+function sampleMeta(orgId: string) {
+  if (orgId === '1') {
+    return {
+      deploys7d: 0,
+      alerts: [] as OverviewAlert[],
+      activity: [] as OverviewActivity[]
+    }
   }
-}
 
-function sampleOverview(): OrgOverview {
   return {
-    servers: 3,
-    sites: 8,
     deploys7d: 14,
-    openAlerts: 2,
-    serversList: [{
-      id: 'srv_1',
-      hostname: 'edge-01.acme.dev',
-      region: 'nyc1',
-      agent: 'online',
-      sites: 4
-    }, {
-      id: 'srv_2',
-      hostname: 'app-02.acme.dev',
-      region: 'sfo3',
-      agent: 'degraded',
-      sites: 3
-    }, {
-      id: 'srv_3',
-      hostname: 'worker-03.acme.dev',
-      region: 'ams3',
-      agent: 'offline',
-      sites: 1
-    }],
     alerts: [{
       id: 'al_1',
-      severity: 'error',
+      severity: 'error' as const,
       title: 'Agent offline',
       detail: 'worker-03.acme.dev has not heartbeated in 18 minutes.'
     }, {
       id: 'al_2',
-      severity: 'warning',
+      severity: 'warning' as const,
       title: 'Certificate expiring',
       detail: 'shop.acme.dev expires in 9 days.'
-    }],
+    }] satisfies OverviewAlert[],
     activity: [{
       id: 'act_1',
       label: 'Deploy succeeded',
-      target: 'api.acme.dev → main',
-      status: 'success',
+      target: 'api.acme.dev -> main',
+      status: 'success' as const,
       at: new Date(Date.now() - 1000 * 60 * 18).toISOString()
     }, {
       id: 'act_2',
       label: 'Deploy failed',
-      target: 'shop.acme.dev → release/2.4',
-      status: 'failed',
+      target: 'shop.acme.dev -> release/2.4',
+      status: 'failed' as const,
       at: new Date(Date.now() - 1000 * 60 * 55).toISOString()
     }, {
       id: 'act_3',
       label: 'Deploy running',
-      target: 'docs.acme.dev → main',
-      status: 'running',
+      target: 'docs.acme.dev -> main',
+      status: 'running' as const,
       at: new Date(Date.now() - 1000 * 60 * 4).toISOString()
     }, {
       id: 'act_4',
       label: 'Server provisioned',
       target: 'edge-01.acme.dev',
-      status: 'success',
+      status: 'success' as const,
       at: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString()
-    }]
+    }] satisfies OverviewActivity[]
   }
 }
 
-// ponytail: stub overview until servers/deploys API exists
-const byOrg = reactive<Record<string, OrgOverview>>({})
+// ponytail: alerts/activity stay stubbed until events API exists
+const metaByOrg = reactive<Record<string, ReturnType<typeof sampleMeta>>>({})
 
-function ensure(orgId: string): OrgOverview {
-  if (!byOrg[orgId]) {
-    // Outpost (id 1) starts empty; others get sample fleet for UI review
-    byOrg[orgId] = orgId === '1' ? emptyOverview() : sampleOverview()
+function ensureMeta(orgId: string) {
+  if (!metaByOrg[orgId]) {
+    metaByOrg[orgId] = sampleMeta(orgId)
   }
-  return byOrg[orgId]!
+  return metaByOrg[orgId]!
 }
 
 export function useOrgOverview() {
   const { selected } = useOrganizations()
+  const { servers } = useServers()
 
-  const overview = computed(() => ensure(selected.value.id))
+  const overview = computed(() => {
+    const meta = ensureMeta(selected.value.id)
+    const list = servers.value
+    return {
+      servers: list.length,
+      sites: list.reduce((sum, s) => sum + s.sites, 0),
+      deploys7d: meta.deploys7d,
+      openAlerts: meta.alerts.length,
+      serversList: list.map(s => ({
+        id: s.id,
+        hostname: s.hostname,
+        region: s.region || 'n/a',
+        agent: s.agent,
+        sites: s.sites
+      })),
+      alerts: meta.alerts,
+      activity: meta.activity
+    }
+  })
 
   const isEmpty = computed(() => overview.value.servers === 0)
 

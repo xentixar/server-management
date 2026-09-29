@@ -13,6 +13,13 @@ const links = computed(() => [[{
     open.value = false
   }
 }, {
+  label: 'Servers',
+  icon: 'i-lucide-server',
+  to: orgHref('/servers'),
+  onSelect: () => {
+    open.value = false
+  }
+}, {
   label: 'Organization',
   to: orgHref('/organization'),
   icon: 'i-lucide-building-2',

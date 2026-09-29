@@ -7,26 +7,51 @@ import type {
 } from '~/utils/billing'
 import { planById } from '~/utils/billing'
 
-function defaultSubscription(): SubscriptionState {
+function defaultSubscription(orgId: string): SubscriptionState {
+  if (orgId === '1') {
+    return {
+      planId: 'free',
+      interval: 'monthly',
+      status: 'active',
+      renewsAt: null,
+      cancelAtPeriodEnd: false,
+      usage: { servers: 0, sites: 0, seats: 1 },
+      paymentMethod: null,
+      invoices: [{
+        id: 'inv_1001',
+        number: 'INV-1001',
+        date: '2026-08-01T00:00:00.000Z',
+        amount: 0,
+        status: 'paid'
+      }, {
+        id: 'inv_1002',
+        number: 'INV-1002',
+        date: '2026-09-01T00:00:00.000Z',
+        amount: 0,
+        status: 'paid'
+      }]
+    }
+  }
+
+  // Acme sample fleet (3 servers) needs Pro room
   return {
-    planId: 'free',
+    planId: 'pro',
     interval: 'monthly',
     status: 'active',
-    renewsAt: null,
+    renewsAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 20).toISOString(),
     cancelAtPeriodEnd: false,
-    usage: { servers: 0, sites: 0, seats: 1 },
-    paymentMethod: null,
+    usage: { servers: 3, sites: 8, seats: 3 },
+    paymentMethod: {
+      brand: 'Visa',
+      last4: '4242',
+      expMonth: 12,
+      expYear: 2028
+    },
     invoices: [{
-      id: 'inv_1001',
-      number: 'INV-1001',
-      date: '2026-08-01T00:00:00.000Z',
-      amount: 0,
-      status: 'paid'
-    }, {
-      id: 'inv_1002',
-      number: 'INV-1002',
+      id: 'inv_2001',
+      number: 'INV-2001',
       date: '2026-09-01T00:00:00.000Z',
-      amount: 0,
+      amount: 29,
       status: 'paid'
     }]
   }
@@ -37,7 +62,7 @@ const byOrg = reactive<Record<string, SubscriptionState>>({})
 
 function ensure(orgId: string): SubscriptionState {
   if (!byOrg[orgId]) {
-    byOrg[orgId] = defaultSubscription()
+    byOrg[orgId] = defaultSubscription(orgId)
   }
   return byOrg[orgId]!
 }
@@ -117,6 +142,11 @@ export function useBilling() {
     sub.status = 'active'
   }
 
+  function setUsage(partial: Partial<SubscriptionState['usage']>) {
+    const sub = ensure(selected.value.id)
+    sub.usage = { ...sub.usage, ...partial }
+  }
+
   return {
     subscription,
     currentPlan,
@@ -124,6 +154,7 @@ export function useBilling() {
     setPaymentMethod,
     removePaymentMethod,
     cancelAtPeriodEnd,
-    resumeSubscription
+    resumeSubscription,
+    setUsage
   }
 }

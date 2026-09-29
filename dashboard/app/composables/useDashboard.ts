@@ -8,6 +8,7 @@ const _useDashboard = () => {
 
   defineShortcuts({
     'g-h': () => router.push(orgHref()),
+    'g-v': () => router.push(orgHref('/servers')),
     'g-o': () => router.push(orgHref('/organization')),
     'n': () => isNotificationsSlideoverOpen.value = !isNotificationsSlideoverOpen.value
   })

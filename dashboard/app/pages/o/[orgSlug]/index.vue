@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { formatDate } from '~/utils/billing'
-import type { OverviewActivity, OverviewServer } from '~/composables/useOrgOverview'
+import type { OverviewActivity } from '~/composables/useOrgOverview'
+import { agentBadgeColor } from '~/utils/servers'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
 const { selected, orgHref } = useOrganizations()
@@ -37,16 +38,6 @@ const stats = computed(() => [{
   hint: overview.value.openAlerts ? 'Needs attention' : 'All clear'
 }])
 
-function agentColor(agent: OverviewServer['agent']) {
-  if (agent === 'online') {
-    return 'success' as const
-  }
-  if (agent === 'degraded') {
-    return 'warning' as const
-  }
-  return 'error' as const
-}
-
 function activityColor(status: OverviewActivity['status']) {
   if (status === 'success') {
     return 'success' as const
@@ -70,10 +61,10 @@ function relativeTime(iso: string) {
   return formatDate(iso)
 }
 
-function onAddServer() {
+function onTerraformSoon() {
   toast.add({
-    title: 'Servers coming next',
-    description: 'Add-server UI is the next flow after this dashboard.',
+    title: 'Coming later',
+    description: 'Terraform provisioning lands in a later phase.',
     color: 'neutral'
   })
 }
@@ -115,9 +106,9 @@ function onAddServer() {
           </UTooltip>
 
           <UButton
+            :to="orgHref('/servers/new')"
             label="Add server"
             icon="i-lucide-plus"
-            @click="onAddServer"
           />
         </template>
       </UDashboardNavbar>
@@ -179,16 +170,16 @@ function onAddServer() {
             </div>
             <div class="flex flex-wrap gap-2">
               <UButton
+                :to="orgHref('/servers/new')"
                 label="Add server manually"
                 icon="i-lucide-terminal"
-                @click="onAddServer"
               />
               <UButton
                 label="Provision with Terraform"
                 color="neutral"
                 variant="outline"
                 icon="i-lucide-cloud"
-                @click="onAddServer"
+                @click="onTerraformSoon"
               />
             </div>
           </div>
@@ -207,12 +198,12 @@ function onAddServer() {
                 Servers
               </h2>
               <UButton
+                :to="orgHref('/servers')"
                 label="View all"
                 color="neutral"
                 variant="link"
                 size="sm"
                 class="px-0"
-                @click="onAddServer"
               />
             </div>
 
@@ -232,7 +223,7 @@ function onAddServer() {
                 </div>
                 <UBadge
                   :label="server.agent"
-                  :color="agentColor(server.agent)"
+                  :color="agentBadgeColor(server.agent)"
                   variant="subtle"
                   class="capitalize"
                 />
