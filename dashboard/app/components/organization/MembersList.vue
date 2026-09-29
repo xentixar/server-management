@@ -6,31 +6,36 @@ defineProps<{
   members: Member[]
 }>()
 
+const toast = useToast()
+
 const items = [{
   label: 'Edit member',
-  onSelect: () => console.log('Edit member')
+  onSelect: () => toast.add({ title: 'Not wired yet', color: 'neutral' })
 }, {
   label: 'Remove member',
   color: 'error' as const,
-  onSelect: () => console.log('Remove member')
+  onSelect: () => toast.add({ title: 'Not wired yet', color: 'neutral' })
 }] satisfies DropdownMenuItem[]
 </script>
 
 <template>
-  <ul role="list" class="divide-y divide-default">
+  <ul
+    role="list"
+    class="divide-y divide-default"
+  >
     <li
       v-for="(member, index) in members"
       :key="index"
-      class="flex items-center justify-between gap-3 py-3 px-4 sm:px-6"
+      class="flex items-center justify-between gap-3 px-4 py-3 sm:px-6"
     >
-      <div class="flex items-center gap-3 min-w-0">
+      <div class="flex min-w-0 items-center gap-3">
         <UAvatar
           v-bind="member.avatar"
           size="md"
         />
 
-        <div class="text-sm min-w-0">
-          <p class="text-highlighted font-medium truncate">
+        <div class="min-w-0 text-sm">
+          <p class="text-highlighted truncate font-medium">
             {{ member.name }}
           </p>
           <p class="text-muted truncate">
@@ -47,7 +52,10 @@ const items = [{
           :ui="{ value: 'capitalize', item: 'capitalize' }"
         />
 
-        <UDropdownMenu :items="items" :content="{ align: 'end' }">
+        <UDropdownMenu
+          :items="items"
+          :content="{ align: 'end' }"
+        >
           <UButton
             icon="i-lucide-ellipsis-vertical"
             color="neutral"

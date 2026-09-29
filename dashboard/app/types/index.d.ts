@@ -11,6 +11,16 @@ export interface User {
   location: string
 }
 
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  avatar?: {
+    src?: string
+    alt?: string
+  }
+}
+
 export interface Member {
   name: string
   username: string

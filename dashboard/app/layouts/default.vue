@@ -18,33 +18,27 @@ const links = [[{
     open.value = false
   }
 }, {
-  label: 'Settings',
-  to: '/settings',
-  icon: 'i-lucide-settings',
+  label: 'Organization',
+  to: '/organization',
+  icon: 'i-lucide-building-2',
   defaultOpen: true,
   type: 'trigger',
   children: [{
     label: 'General',
-    to: '/settings',
+    to: '/organization',
     exact: true,
     onSelect: () => {
       open.value = false
     }
   }, {
     label: 'Members',
-    to: '/settings/members',
+    to: '/organization/members',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Notifications',
-    to: '/settings/notifications',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Security',
-    to: '/settings/security',
+    label: 'Billing',
+    to: '/organization/billing',
     onSelect: () => {
       open.value = false
     }
@@ -69,11 +63,14 @@ const groups = computed(() => [{
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header="{ collapsed }">
-        <TeamsMenu :collapsed="collapsed" />
+        <OrganizationsMenu :collapsed="collapsed" />
       </template>
 
       <template #default="{ collapsed }">
-        <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
+        <UDashboardSearchButton
+          :collapsed="collapsed"
+          class="bg-transparent ring-default"
+        />
 
         <UNavigationMenu
           :collapsed="collapsed"
