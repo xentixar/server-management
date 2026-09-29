@@ -2,15 +2,11 @@
 package routes
 
 import (
-	"net/http"
+	"api/app/controllers"
 
 	"github.com/gin-gonic/gin"
 )
 
 func Register(router *gin.RouterGroup) {
-	router.GET("/ping", func(context *gin.Context) {
-		context.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
+	router.GET("/health", controllers.HealthController{}.GetHealth)
 }
