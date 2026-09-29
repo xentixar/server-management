@@ -8,7 +8,7 @@ defineProps<{
 
 const router = useRouter()
 const toast = useToast()
-const { organizations, selected, select, create } = useOrganizations()
+const { organizations, selected, switchTo, create, orgHref } = useOrganizations()
 
 const createOpen = ref(false)
 const createSchema = z.object({
@@ -18,7 +18,7 @@ type CreateSchema = z.output<typeof createSchema>
 const createState = reactive<Partial<CreateSchema>>({ name: '' })
 
 function onCreate(event: FormSubmitEvent<CreateSchema>) {
-  create(event.data.name)
+  const org = create(event.data.name)
   createState.name = ''
   createOpen.value = false
   toast.add({
@@ -26,6 +26,7 @@ function onCreate(event: FormSubmitEvent<CreateSchema>) {
     description: 'Local stub only. API wiring comes later.',
     color: 'neutral'
   })
+  router.push(`/o/${org.slug}`)
 }
 
 const items = computed<DropdownMenuItem[][]>(() => {
@@ -36,7 +37,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
     checked: org.id === selected.value.id,
     onSelect(e: Event) {
       e.preventDefault()
-      select(org.id)
+      switchTo(org.slug)
     }
   })), [{
     label: 'Create organization',
@@ -49,7 +50,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
     label: 'Organization settings',
     icon: 'i-lucide-cog',
     onSelect() {
-      router.push('/organization')
+      router.push(orgHref('/organization'))
     }
   }]]
 })
@@ -79,7 +80,10 @@ const items = computed<DropdownMenuItem[][]>(() => {
     />
   </UDropdownMenu>
 
-  <UModal v-model:open="createOpen" title="Create organization">
+  <UModal
+    v-model:open="createOpen"
+    title="Create organization"
+  >
     <template #body>
       <UForm
         :schema="createSchema"

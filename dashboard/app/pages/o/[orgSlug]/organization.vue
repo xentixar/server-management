@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
-const links = [[{
+const { orgHref } = useOrganizations()
+
+const links = computed(() => [[{
   label: 'General',
   icon: 'i-lucide-building-2',
-  to: '/organization',
+  to: orgHref('/organization'),
   exact: true
 }, {
   label: 'Members',
   icon: 'i-lucide-users',
-  to: '/organization/members'
+  to: orgHref('/organization/members')
 }, {
   label: 'Billing',
   icon: 'i-lucide-credit-card',
-  to: '/organization/billing'
-}]] satisfies NavigationMenuItem[][]
+  to: orgHref('/organization/billing')
+}]] satisfies NavigationMenuItem[][])
 </script>
 
 <template>

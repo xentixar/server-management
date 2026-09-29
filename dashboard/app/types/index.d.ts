@@ -21,13 +21,6 @@ export interface Organization {
   }
 }
 
-export interface Member {
-  name: string
-  username: string
-  role: 'member' | 'owner'
-  avatar: AvatarProps
-}
-
 export interface Notification {
   id: number
   unread?: boolean

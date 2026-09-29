@@ -30,10 +30,13 @@ watch(() => state.name, (name) => {
 })
 
 function onSubmit(event: FormSubmitEvent<OrgSchema>) {
+  const previousSlug = selected.value.slug
   updateSelected({ name: event.data.name, slug: event.data.slug })
   toast.add({
     title: 'Saved locally',
-    description: 'Organization settings are stubs until the API is wired.',
+    description: event.data.slug !== previousSlug
+      ? `URL updated to /o/${event.data.slug}`
+      : 'Organization settings are stubs until the API is wired.',
     color: 'neutral'
   })
 }

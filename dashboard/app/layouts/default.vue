@@ -2,53 +2,48 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const open = ref(false)
+const { orgHref } = useOrganizations()
 
-const links = [[{
+const links = computed(() => [[{
   label: 'Home',
   icon: 'i-lucide-house',
-  to: '/',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Customers',
-  icon: 'i-lucide-users',
-  to: '/customers',
+  to: orgHref(),
+  exact: true,
   onSelect: () => {
     open.value = false
   }
 }, {
   label: 'Organization',
-  to: '/organization',
+  to: orgHref('/organization'),
   icon: 'i-lucide-building-2',
   defaultOpen: true,
   type: 'trigger',
   children: [{
     label: 'General',
-    to: '/organization',
+    to: orgHref('/organization'),
     exact: true,
     onSelect: () => {
       open.value = false
     }
   }, {
     label: 'Members',
-    to: '/organization/members',
+    to: orgHref('/organization/members'),
     onSelect: () => {
       open.value = false
     }
   }, {
     label: 'Billing',
-    to: '/organization/billing',
+    to: orgHref('/organization/billing'),
     onSelect: () => {
       open.value = false
     }
   }]
-}]] satisfies NavigationMenuItem[][]
+}]] satisfies NavigationMenuItem[][])
 
 const groups = computed(() => [{
   id: 'links',
   label: 'Go to',
-  items: links.flat()
+  items: links.value.flat()
 }])
 </script>
 
