@@ -27,5 +27,6 @@ func Register(router *gin.RouterGroup) {
 		group.GET("", middlewares.Authenticate(), organizationController.Index)
 		group.POST("", middlewares.Authenticate(), organizationController.Store)
 		group.PATCH("/:organization", middlewares.Authenticate(), organizationController.Update)
+		group.DELETE("/:organization", middlewares.Authenticate(), organizationController.Destroy)
 	}
 }

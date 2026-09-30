@@ -57,3 +57,13 @@ func (Organization) FindByUserID(userID uint) ([]Organization, error) {
 func (o *Organization) Create() error {
 	return gorm.G[Organization](config.GetDatabase()).Create(context.Background(), o)
 }
+
+func (o *Organization) Update() error {
+	_, err := gorm.G[Organization](config.GetDatabase()).Where("id = ?", o.ID).Updates(context.Background(), *o)
+	return err
+}
+
+func (o *Organization) Delete() error {
+	_, err := gorm.G[Organization](config.GetDatabase()).Where("id = ?", o.ID).Delete(context.Background())
+	return err
+}

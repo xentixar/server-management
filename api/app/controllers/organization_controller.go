@@ -6,7 +6,6 @@ import (
 	"api/app/models"
 	"api/app/requests"
 	"api/app/resources"
-	"api/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -96,11 +95,37 @@ func (OrganizationController) Update(ctx *gin.Context) {
 	organization.Name = storeOrganizationRequest.Name
 	organization.Slug = slug
 
-	config.GetDatabase().Save(organization)
+	if err := organization.Update(); err != nil {
+		response(ctx).error("Failed to update organization", gin.H{}, 500)
+		return
+	}
 
 	response(ctx).success(
 		"Organization updated successfully!",
 		resources.OrganizationResource(organization),
 		200,
 	)
+}
+
+func (OrganizationController) Destroy(ctx *gin.Context) {
+	organizationID, err := strconv.Atoi(ctx.Param("organization"))
+	if err != nil {
+		response(ctx).error("Invalid organization ID", gin.H{}, 400)
+		return
+	}
+
+	user := currentUser(ctx)
+
+	organization, err := (models.Organization{}).FindByID(uint(organizationID), user.ID)
+	if err != nil {
+		response(ctx).error("Organization not found", gin.H{}, 404)
+		return
+	}
+
+	if err := organization.Delete(); err != nil {
+		response(ctx).error("Failed to delete organization", gin.H{}, 500)
+		return
+	}
+
+	response(ctx).success("Organization deleted successfully!", gin.H{}, 200)
 }
