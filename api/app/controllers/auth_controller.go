@@ -6,6 +6,7 @@ import (
 
 	"api/app/models"
 	"api/app/requests"
+	"api/app/resources"
 	"api/config"
 	"api/utils"
 
@@ -89,10 +90,12 @@ func (AuthController) Register(ctx *gin.Context) {
 }
 
 func (AuthController) GetUser(ctx *gin.Context) {
-	user, _ := ctx.Get("user")
+	value, _ := ctx.Get("user")
+	user := value.(models.User)
+
 	response(ctx).success(
 		"User fetched successfully!",
-		user,
+		resources.UserResource(user),
 		http.StatusOK,
 	)
 }
