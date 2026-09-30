@@ -40,6 +40,13 @@ func (Organization) UniqueSlug(name string) (string, error) {
 	}
 }
 
+func (Organization) FindByID(id uint, userId uint) (Organization, error) {
+	return gorm.
+		G[Organization](config.GetDatabase()).
+		Where("id = ? AND user_id = ?", id, userId).
+		First(context.Background())
+}
+
 func (Organization) FindByUserID(userID uint) ([]Organization, error) {
 	return gorm.
 		G[Organization](config.GetDatabase()).
