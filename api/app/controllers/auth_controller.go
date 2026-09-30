@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"net/http"
 
 	"api/app/models"
@@ -11,7 +10,6 @@ import (
 	"api/utils"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type AuthController struct{}
@@ -23,19 +21,8 @@ func (AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	bgContext := context.Background()
-
-	user, err := gorm.G[models.User](config.GetDatabase()).Where("email = ?", loginRequest.Email).First(bgContext)
-	if err != nil {
-		response(ctx).error(
-			"The provided credentials doesn't match our system",
-			gin.H{},
-			http.StatusUnauthorized,
-		)
-		return
-	}
-
-	if !config.CheckPasswordHash(loginRequest.Password, user.Password) {
+	user, err := (models.User{}).FindByEmail(loginRequest.Email)
+	if err != nil || !config.CheckPasswordHash(loginRequest.Password, user.Password) {
 		response(ctx).error(
 			"The provided credentials doesn't match our system",
 			gin.H{},
@@ -46,10 +33,10 @@ func (AuthController) Login(ctx *gin.Context) {
 
 	token, _ := utils.GenerateToken()
 
-	_ = gorm.G[models.PersonalAccessToken](config.GetDatabase()).Create(bgContext, &models.PersonalAccessToken{
+	_ = (&models.PersonalAccessToken{
 		UserID: int(user.ID),
 		Token:  token,
-	})
+	}).Create()
 
 	response(ctx).success("Login successfull!", gin.H{
 		"access_token": token,
@@ -63,11 +50,7 @@ func (AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	bgContext := context.Background()
-
-	_, err := gorm.G[models.User](config.GetDatabase()).Where("email = ?", registerRequest.Email).First(bgContext)
-
-	if err == nil {
+	if (models.User{}).IsEmailTaken(registerRequest.Email) {
 		response(ctx).error(
 			"User already exists with the given email",
 			gin.H{
@@ -78,8 +61,6 @@ func (AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	result := gorm.WithResult()
-
 	hashedPassword, _ := config.HashPassword(registerRequest.Password)
 
 	user := models.User{
@@ -88,26 +69,23 @@ func (AuthController) Register(ctx *gin.Context) {
 		Password: hashedPassword,
 	}
 
-	_ = gorm.G[models.User](config.GetDatabase(), result).Create(bgContext, &user)
+	_ = user.Create()
 
-	randomSuffix, _ := utils.RandomAlphanumeric(5)
+	slug, _ := (models.Organization{}).UniqueSlug(user.Name)
 
-	_ = gorm.G[models.Organization](config.GetDatabase(), result).Create(bgContext, &models.Organization{
+	_ = (&models.Organization{
 		Name:   user.Name,
-		Slug:   utils.Slugify(user.Name) + "-" + randomSuffix,
+		Slug:   slug,
 		UserID: user.ID,
-	})
+	}).Create()
 
 	response(ctx).success("User registration successful", gin.H{}, 201)
 }
 
 func (AuthController) GetUser(ctx *gin.Context) {
-	value, _ := ctx.Get("user")
-	user := value.(models.User)
-
 	response(ctx).success(
 		"User fetched successfully!",
-		resources.UserResource(user),
+		resources.UserResource(currentUser(ctx)),
 		http.StatusOK,
 	)
 }

@@ -4,6 +4,7 @@ package controllers
 import (
 	"net/http"
 
+	"api/app/models"
 	"api/utils"
 
 	"github.com/gin-gonic/gin"
@@ -49,4 +50,8 @@ func validate(context *gin.Context, request any) bool {
 	}
 
 	return true
+}
+
+func currentUser(ctx *gin.Context) models.User {
+	return ctx.MustGet("user").(models.User)
 }

@@ -4,32 +4,22 @@ import (
 	"api/app/models"
 	"api/app/requests"
 	"api/app/resources"
-	"api/config"
-	"api/utils"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type OrganizationController struct{}
 
 func (OrganizationController) Index(ctx *gin.Context) {
-	value, _ := ctx.Get("user")
-	user := value.(models.User)
+	user := currentUser(ctx)
 
-	organizations, err := gorm.
-		G[models.Organization](config.GetDatabase()).
-		Where("user_id = ?", user.ID).
-		Find(ctx)
+	organizations, err := (models.Organization{}).FindByUserID(user.ID)
 	if err != nil {
-		ctx.JSON(500, gin.H{
-			"message": "Failed to fetch organizations",
-		})
+		response(ctx).error("Failed to fetch organizations", gin.H{}, 500)
 		return
 	}
 
 	organizationsResponse := make([]map[string]any, 0, len(organizations))
-
 	for _, organization := range organizations {
 		organizationsResponse = append(
 			organizationsResponse,
@@ -47,34 +37,12 @@ func (OrganizationController) Store(ctx *gin.Context) {
 		return
 	}
 
-	value, exists := ctx.Get("user")
-	if !exists {
-		response(ctx).error("Unauthenticated", gin.H{}, 401)
+	user := currentUser(ctx)
+
+	slug, err := (models.Organization{}).UniqueSlug(storeOrganizationRequest.Name)
+	if err != nil {
+		response(ctx).error("Failed to generate organization slug", gin.H{}, 500)
 		return
-	}
-
-	user, ok := value.(models.User)
-	if !ok {
-		response(ctx).error("Invalid user", gin.H{}, 401)
-		return
-	}
-
-	baseSlug := utils.Slugify(storeOrganizationRequest.Name)
-
-	var slug string
-
-	for {
-		randomSuffix, err := utils.RandomAlphanumeric(5)
-		if err != nil {
-			response(ctx).error("Failed to generate organization slug", gin.H{}, 500)
-			return
-		}
-
-		slug = baseSlug + "-" + randomSuffix
-
-		if (models.Organization{}).IsSlugAvailable(slug) {
-			break
-		}
 	}
 
 	organization := models.Organization{
@@ -83,11 +51,7 @@ func (OrganizationController) Store(ctx *gin.Context) {
 		UserID: user.ID,
 	}
 
-	result := gorm.WithResult()
-
-	if err := gorm.
-		G[models.Organization](config.GetDatabase(), result).
-		Create(ctx, &organization); err != nil {
+	if err := organization.Create(); err != nil {
 		response(ctx).error("Failed to create organization", gin.H{}, 500)
 		return
 	}

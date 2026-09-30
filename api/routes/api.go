@@ -14,6 +14,7 @@ func Register(router *gin.RouterGroup) {
 	organizationController := controllers.OrganizationController{}
 
 	router.GET("/health", healthController.GetHealth)
+	
 	group := router.Group("/auth")
 	{
 		group.POST("/login", authController.Login)
