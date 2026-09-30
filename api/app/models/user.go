@@ -1,3 +1,4 @@
+// Package models contains all models
 package models
 
 import "gorm.io/gorm"

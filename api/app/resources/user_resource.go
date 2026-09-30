@@ -1,3 +1,4 @@
+// Package resources contains all the resource mappings
 package resources
 
 import "api/app/models"

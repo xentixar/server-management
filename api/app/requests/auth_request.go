@@ -1,3 +1,4 @@
+// Package requests contains validations
 package requests
 
 type LoginRequest struct {
