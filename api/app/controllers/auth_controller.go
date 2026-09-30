@@ -78,12 +78,24 @@ func (AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
+	result := gorm.WithResult()
+
 	hashedPassword, _ := config.HashPassword(registerRequest.Password)
 
-	_ = gorm.G[models.User](config.GetDatabase()).Create(bgContext, &models.User{
+	user := models.User{
 		Name:     registerRequest.Name,
 		Email:    registerRequest.Email,
 		Password: hashedPassword,
+	}
+
+	_ = gorm.G[models.User](config.GetDatabase(), result).Create(bgContext, &user)
+
+	randomSuffix, _ := utils.RandomAlphanumeric(5)
+
+	_ = gorm.G[models.Organization](config.GetDatabase(), result).Create(bgContext, &models.Organization{
+		Name:   user.Name,
+		Slug:   utils.Slugify(user.Name) + "-" + randomSuffix,
+		UserID: user.ID,
 	})
 
 	response(ctx).success("User registration successful", gin.H{}, 201)
