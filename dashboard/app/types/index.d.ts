@@ -5,13 +5,9 @@ export interface AuthUser {
 }
 
 export interface Organization {
-  id: string
+  id: number
   name: string
   slug: string
-  avatar?: {
-    src?: string
-    alt?: string
-  }
 }
 
 export interface Notification {

@@ -60,11 +60,12 @@ function defaultSubscription(orgId: string): SubscriptionState {
 // ponytail: local stub until billing API exists; keyed by org id
 const byOrg = reactive<Record<string, SubscriptionState>>({})
 
-function ensure(orgId: string): SubscriptionState {
-  if (!byOrg[orgId]) {
-    byOrg[orgId] = defaultSubscription(orgId)
+function ensure(orgId: string | number): SubscriptionState {
+  const key = String(orgId)
+  if (!byOrg[key]) {
+    byOrg[key] = defaultSubscription(key)
   }
-  return byOrg[orgId]!
+  return byOrg[key]!
 }
 
 function nextRenewal(interval: BillingInterval) {
@@ -80,11 +81,11 @@ function nextRenewal(interval: BillingInterval) {
 export function useBilling() {
   const { selected } = useOrganizations()
 
-  const subscription = computed(() => ensure(selected.value.id))
+  const subscription = computed(() => ensure(selected.value?.id ?? '_'))
   const currentPlan = computed(() => planById(subscription.value.planId))
 
   function changePlan(planId: PlanId, interval: BillingInterval) {
-    const sub = ensure(selected.value.id)
+    const sub = ensure(selected.value?.id ?? '_')
     sub.planId = planId
     sub.interval = interval
     sub.status = 'active'
@@ -115,18 +116,18 @@ export function useBilling() {
   }
 
   function setPaymentMethod(method: PaymentMethod) {
-    ensure(selected.value.id).paymentMethod = method
+    ensure(selected.value?.id ?? '_').paymentMethod = method
   }
 
   function removePaymentMethod() {
-    const sub = ensure(selected.value.id)
+    const sub = ensure(selected.value?.id ?? '_')
     if (sub.planId === 'free') {
       sub.paymentMethod = null
     }
   }
 
   function cancelAtPeriodEnd() {
-    const sub = ensure(selected.value.id)
+    const sub = ensure(selected.value?.id ?? '_')
     if (sub.planId === 'free') {
       return
     }
@@ -137,13 +138,13 @@ export function useBilling() {
   }
 
   function resumeSubscription() {
-    const sub = ensure(selected.value.id)
+    const sub = ensure(selected.value?.id ?? '_')
     sub.cancelAtPeriodEnd = false
     sub.status = 'active'
   }
 
   function setUsage(partial: Partial<SubscriptionState['usage']>) {
-    const sub = ensure(selected.value.id)
+    const sub = ensure(selected.value?.id ?? '_')
     sub.usage = { ...sub.usage, ...partial }
   }
 

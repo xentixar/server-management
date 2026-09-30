@@ -36,17 +36,18 @@ function seedMembers(): OrgMember[] {
 // ponytail: local stub until members API exists; keyed by org id
 const byOrg = reactive<Record<string, OrgMember[]>>({})
 
-function ensure(orgId: string): OrgMember[] {
-  if (!byOrg[orgId]) {
-    byOrg[orgId] = seedMembers()
+function ensure(orgId: string | number): OrgMember[] {
+  const key = String(orgId)
+  if (!byOrg[key]) {
+    byOrg[key] = seedMembers()
   }
-  return byOrg[orgId]!
+  return byOrg[key]!
 }
 
 export function useMembers() {
   const { selected } = useOrganizations()
 
-  const members = computed(() => ensure(selected.value.id))
+  const members = computed(() => ensure(selected.value?.id ?? '_'))
 
   const activeMembers = computed(() =>
     members.value.filter(m => m.status === 'active' || m.status === 'suspended')
@@ -61,7 +62,7 @@ export function useMembers() {
   )
 
   function invite(email: string, role: MemberRole) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const normalized = email.trim().toLowerCase()
     if (list.some(m => m.email.toLowerCase() === normalized)) {
       return { ok: false as const, error: 'That email is already a member or invited.' }
@@ -84,7 +85,7 @@ export function useMembers() {
   }
 
   function setRole(id: string, role: MemberRole) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const member = list.find(m => m.id === id)
     if (!member) {
       return { ok: false as const, error: 'Member not found.' }
@@ -99,7 +100,7 @@ export function useMembers() {
   }
 
   function setStatus(id: string, status: MemberStatus) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const member = list.find(m => m.id === id)
     if (!member) {
       return { ok: false as const, error: 'Member not found.' }
@@ -112,7 +113,7 @@ export function useMembers() {
   }
 
   function resendInvite(id: string) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const member = list.find(m => m.id === id && m.status === 'invited')
     if (!member) {
       return { ok: false as const, error: 'Invite not found.' }
@@ -122,7 +123,7 @@ export function useMembers() {
   }
 
   function revokeInvite(id: string) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const index = list.findIndex(m => m.id === id && m.status === 'invited')
     if (index === -1) {
       return { ok: false as const, error: 'Invite not found.' }
@@ -132,7 +133,7 @@ export function useMembers() {
   }
 
   function remove(id: string) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const member = list.find(m => m.id === id)
     if (!member) {
       return { ok: false as const, error: 'Member not found.' }

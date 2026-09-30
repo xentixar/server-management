@@ -121,7 +121,7 @@ function onTerraformSoon() {
             {{ greeting }}
           </p>
           <h1 class="text-highlighted text-2xl font-semibold tracking-tight sm:text-3xl">
-            {{ selected.name }}
+            {{ selected?.name }}
           </h1>
           <p class="text-muted max-w-2xl text-sm">
             Operations overview for this organization. Status, deploys, and alerts surface here first.

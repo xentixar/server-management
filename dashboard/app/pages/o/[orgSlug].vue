@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
-const { findBySlug, resolveLandingSlug, rememberSlug } = useOrganizations()
+const { findBySlug, resolveLandingSlug, rememberSlug, organizations } = useOrganizations()
 
 const slug = computed(() => {
   const raw = route.params.orgSlug
@@ -16,7 +16,12 @@ watchEffect(() => {
 })
 
 if (!findBySlug(slug.value)) {
-  await navigateTo(`/o/${resolveLandingSlug()}`, { replace: true })
+  const landing = resolveLandingSlug()
+  if (landing) {
+    await navigateTo(`/o/${landing}`, { replace: true })
+  } else if (!organizations.value.length) {
+    await navigateTo('/', { replace: true })
+  }
 }
 </script>
 

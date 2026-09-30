@@ -81,6 +81,7 @@ const _useSession = () => {
   function clearSession() {
     token.value = null
     user.value = null
+    useOrganizations().clearOrganizations()
   }
 
   async function logout() {

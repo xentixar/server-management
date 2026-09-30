@@ -124,7 +124,7 @@ function statusColor(status: Invoice['status']) {
     <div>
       <UPageCard
         title="Current plan"
-        :description="`Billing for ${selected.name}.`"
+        :description="`Billing for ${selected?.name}.`"
         variant="naked"
         orientation="horizontal"
         class="mb-4"

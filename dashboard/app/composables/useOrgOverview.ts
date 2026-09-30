@@ -69,11 +69,12 @@ function sampleMeta(orgId: string) {
 // ponytail: alerts/activity stay stubbed until events API exists
 const metaByOrg = reactive<Record<string, ReturnType<typeof sampleMeta>>>({})
 
-function ensureMeta(orgId: string) {
-  if (!metaByOrg[orgId]) {
-    metaByOrg[orgId] = sampleMeta(orgId)
+function ensureMeta(orgId: string | number) {
+  const key = String(orgId)
+  if (!metaByOrg[key]) {
+    metaByOrg[key] = sampleMeta(key)
   }
-  return metaByOrg[orgId]!
+  return metaByOrg[key]!
 }
 
 export function useOrgOverview() {
@@ -81,7 +82,7 @@ export function useOrgOverview() {
   const { servers } = useServers()
 
   const overview = computed(() => {
-    const meta = ensureMeta(selected.value.id)
+    const meta = ensureMeta(selected.value?.id ?? '_')
     const list = servers.value
     return {
       servers: list.length,

@@ -25,4 +25,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
       query: to.path === '/' ? undefined : { redirect: to.fullPath }
     })
   }
+
+  await useOrganizations().ensureOrganizations()
 })

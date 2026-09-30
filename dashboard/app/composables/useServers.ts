@@ -46,18 +46,19 @@ function sampleServers(): Server[] {
 // ponytail: local stub until servers API exists; keyed by org id
 const byOrg = reactive<Record<string, Server[]>>({})
 
-function ensure(orgId: string): Server[] {
-  if (!byOrg[orgId]) {
-    byOrg[orgId] = orgId === '1' ? [] : sampleServers()
+function ensure(orgId: string | number): Server[] {
+  const key = String(orgId)
+  if (!byOrg[key]) {
+    byOrg[key] = sampleServers()
   }
-  return byOrg[orgId]!
+  return byOrg[key]!
 }
 
 export function useServers() {
   const { selected } = useOrganizations()
   const { currentPlan, setUsage } = useBilling()
 
-  const servers = computed(() => ensure(selected.value.id))
+  const servers = computed(() => ensure(selected.value?.id ?? '_'))
 
   const serverLimit = computed(() =>
     currentPlan.value.limits.find(l => l.key === 'servers')?.max ?? 1
@@ -75,7 +76,7 @@ export function useServers() {
   }
 
   function create(input: CreateServerInput) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     if (list.length >= serverLimit.value) {
       return {
         ok: false as const,
@@ -110,7 +111,7 @@ export function useServers() {
   }
 
   function remove(id: string) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const index = list.findIndex(s => s.id === id)
     if (index === -1) {
       return { ok: false as const, error: 'Server not found.' }
@@ -121,7 +122,7 @@ export function useServers() {
   }
 
   function getById(id: string) {
-    return ensure(selected.value.id).find(s => s.id === id)
+    return ensure(selected.value?.id ?? '_').find(s => s.id === id)
   }
 
   function setAgent(id: string, agent: Server['agent']) {
@@ -142,7 +143,7 @@ export function useServers() {
     return { ok: true as const, server }
   }
 
-  watch(() => selected.value.id, (id) => {
+  watch(() => selected.value?.id ?? '_', (id) => {
     syncUsage(ensure(id))
   }, { immediate: true })
 

@@ -88,11 +88,12 @@ function sampleSites(): Site[] {
 // ponytail: local stub until sites API exists; keyed by org id
 const byOrg = reactive<Record<string, Site[]>>({})
 
-function ensure(orgId: string): Site[] {
-  if (!byOrg[orgId]) {
-    byOrg[orgId] = orgId === '1' ? [] : sampleSites()
+function ensure(orgId: string | number): Site[] {
+  const key = String(orgId)
+  if (!byOrg[key]) {
+    byOrg[key] = sampleSites()
   }
-  return byOrg[orgId]!
+  return byOrg[key]!
 }
 
 export function useSites() {
@@ -100,10 +101,10 @@ export function useSites() {
   const { servers, getById, setSitesCount } = useServers()
   const { setUsage } = useBilling()
 
-  const sites = computed(() => ensure(selected.value.id))
+  const sites = computed(() => ensure(selected.value?.id ?? '_'))
 
   function syncCounts() {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     for (const server of servers.value) {
       setSitesCount(server.id, list.filter(s => s.serverId === server.id).length)
     }
@@ -111,7 +112,7 @@ export function useSites() {
   }
 
   function create(input: CreateSiteInput) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const domain = input.domain.trim().toLowerCase()
     if (list.some(s => s.domain.toLowerCase() === domain)) {
       return { ok: false as const, error: 'That domain is already used in this organization.' }
@@ -139,7 +140,7 @@ export function useSites() {
   }
 
   function remove(id: string) {
-    const list = ensure(selected.value.id)
+    const list = ensure(selected.value?.id ?? '_')
     const index = list.findIndex(s => s.id === id)
     if (index === -1) {
       return { ok: false as const, error: 'Site not found.' }
@@ -149,7 +150,7 @@ export function useSites() {
     return { ok: true as const, site: removed! }
   }
 
-  watch(() => selected.value.id, () => {
+  watch(() => selected.value?.id, () => {
     syncCounts()
   }, { immediate: true })
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { DropdownMenuItem, FormSubmitEvent } from '@nuxt/ui'
+import { ApiError } from '~/utils/api'
 
 defineProps<{
   collapsed?: boolean
@@ -8,33 +9,41 @@ defineProps<{
 
 const router = useRouter()
 const toast = useToast()
-const { organizations, selected, switchTo, create, orgHref } = useOrganizations()
+const { organizations, selected, switchTo, create, orgHref, pending } = useOrganizations()
 
 const createOpen = ref(false)
 const createSchema = z.object({
-  name: z.string().min(2, 'Must be at least 2 characters')
+  name: z.string().min(5, 'Must be at least 5 characters')
 })
 type CreateSchema = z.output<typeof createSchema>
 const createState = reactive<Partial<CreateSchema>>({ name: '' })
 
-function onCreate(event: FormSubmitEvent<CreateSchema>) {
-  const org = create(event.data.name)
-  createState.name = ''
-  createOpen.value = false
-  toast.add({
-    title: 'Organization created',
-    description: 'Local stub only. API wiring comes later.',
-    color: 'neutral'
-  })
-  router.push(`/o/${org.slug}`)
+async function onCreate(event: FormSubmitEvent<CreateSchema>) {
+  try {
+    const org = await create(event.data.name)
+    createState.name = ''
+    createOpen.value = false
+    toast.add({
+      title: 'Organization created',
+      color: 'success'
+    })
+    await router.push(`/o/${org.slug}`)
+  } catch (error) {
+    const err = error instanceof ApiError ? error : new ApiError('Create failed', 500)
+    toast.add({
+      title: 'Could not create organization',
+      description: err.message,
+      color: 'error'
+    })
+  }
 }
 
 const items = computed<DropdownMenuItem[][]>(() => {
   return [organizations.value.map(org => ({
     label: org.name,
-    avatar: org.avatar,
+    avatar: { alt: org.name },
     type: 'checkbox' as const,
-    checked: org.id === selected.value.id,
+    checked: org.id === selected.value?.id,
     onSelect(e: Event) {
       e.preventDefault()
       switchTo(org.slug)
@@ -65,7 +74,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
     <UButton
       v-bind="{
         label: collapsed ? undefined : selected?.name,
-        avatar: selected?.avatar,
+        avatar: selected ? { alt: selected.name } : undefined,
         trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
       }"
       color="neutral"
@@ -113,6 +122,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
           <UButton
             type="submit"
             label="Create"
+            :loading="pending"
           />
         </div>
       </UForm>
