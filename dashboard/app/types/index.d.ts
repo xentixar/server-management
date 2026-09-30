@@ -1,5 +1,11 @@
 import type { AvatarProps } from '@nuxt/ui'
 
+export interface AuthUser {
+  id: number
+  name: string
+  email: string
+}
+
 export type UserStatus = 'subscribed' | 'unsubscribed' | 'bounced'
 
 export interface User {

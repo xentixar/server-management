@@ -6,19 +6,22 @@ defineProps<{
 }>()
 
 const colorMode = useColorMode()
-const router = useRouter()
+const { user, logout } = useSession()
 
-const user = ref({
-  name: 'Outpost User',
+const displayUser = computed(() => ({
+  name: user.value?.name || 'Outpost User',
   avatar: {
-    alt: 'Outpost User'
+    alt: user.value?.name || 'Outpost User'
   }
-})
+}))
 
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
-  label: user.value.name,
-  avatar: user.value.avatar
+  label: displayUser.value.name,
+  avatar: displayUser.value.avatar,
+  ...(user.value?.email
+    ? { description: user.value.email }
+    : {})
 }], [{
   label: 'Profile',
   icon: 'i-lucide-user'
@@ -48,7 +51,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   label: 'Log out',
   icon: 'i-lucide-log-out',
   onSelect() {
-    router.push('/login')
+    logout()
   }
 }]]))
 </script>
@@ -61,8 +64,8 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   >
     <UButton
       v-bind="{
-        ...user,
-        label: collapsed ? undefined : user?.name,
+        ...displayUser,
+        label: collapsed ? undefined : displayUser.name,
         trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
       }"
       color="neutral"

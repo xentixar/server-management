@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { registerSchema, type RegisterSchema } from '~/utils/auth.schema'
+import { ApiError } from '~/utils/api'
 
 definePageMeta({ layout: 'auth' })
 
 useSeoMeta({ title: 'Create account - Outpost' })
 
 const toast = useToast()
+const { register, pending } = useSession()
 
 const state = reactive<Partial<RegisterSchema>>({
   name: '',
@@ -14,12 +16,23 @@ const state = reactive<Partial<RegisterSchema>>({
   confirmPassword: ''
 })
 
-function onSubmit() {
-  toast.add({
-    title: 'Not wired yet',
-    description: 'Auth API will land in a later phase.',
-    color: 'neutral'
-  })
+async function onSubmit() {
+  try {
+    await register(state.name!, state.email!, state.password!)
+    toast.add({
+      title: 'Account created',
+      description: 'Sign in with your new credentials.',
+      color: 'success'
+    })
+    await navigateTo('/login')
+  } catch (error) {
+    const err = error instanceof ApiError ? error : new ApiError('Registration failed', 500)
+    toast.add({
+      title: 'Registration failed',
+      description: err.data.email || err.message,
+      color: 'error'
+    })
+  }
 }
 </script>
 
@@ -97,6 +110,7 @@ function onSubmit() {
         type="submit"
         label="Create account"
         block
+        :loading="pending"
       />
     </UForm>
 

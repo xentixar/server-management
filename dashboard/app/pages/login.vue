@@ -1,23 +1,33 @@
 <script setup lang="ts">
 import { loginSchema, type LoginSchema } from '~/utils/auth.schema'
+import { ApiError } from '~/utils/api'
 
 definePageMeta({ layout: 'auth' })
 
 useSeoMeta({ title: 'Sign in - Outpost' })
 
+const route = useRoute()
 const toast = useToast()
+const { login, pending } = useSession()
 
 const state = reactive<Partial<LoginSchema>>({
   email: '',
   password: ''
 })
 
-function onSubmit() {
-  toast.add({
-    title: 'Not wired yet',
-    description: 'Auth API will land in a later phase.',
-    color: 'neutral'
-  })
+async function onSubmit() {
+  try {
+    await login(state.email!, state.password!)
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+    await navigateTo(redirect)
+  } catch (error) {
+    const err = error instanceof ApiError ? error : new ApiError('Sign in failed', 500)
+    toast.add({
+      title: 'Sign in failed',
+      description: err.message,
+      color: 'error'
+    })
+  }
 }
 </script>
 
@@ -80,6 +90,7 @@ function onSubmit() {
         type="submit"
         label="Sign in"
         block
+        :loading="pending"
       />
     </UForm>
 

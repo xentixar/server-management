@@ -16,6 +16,10 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  runtimeConfig: {
+    apiBase: 'http://localhost:8080'
+  },
+
   routeRules: {
     '/api/**': {
       cors: true
