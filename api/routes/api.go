@@ -22,11 +22,12 @@ func Register(router *gin.RouterGroup) {
 		group.GET("/user", middlewares.Authenticate(), authController.GetUser)
 	}
 
-	group = router.Group("/organizations")
+	group = router.Group("/organizations", middlewares.Authenticate())
 	{
-		group.GET("", middlewares.Authenticate(), organizationController.Index)
-		group.POST("", middlewares.Authenticate(), organizationController.Store)
-		group.PATCH("/:organization", middlewares.Authenticate(), organizationController.Update)
-		group.DELETE("/:organization", middlewares.Authenticate(), organizationController.Destroy)
+		group.GET("", organizationController.Index)
+		group.POST("", organizationController.Store)
+		group.GET("/:organization", organizationController.Show)
+		group.PATCH("/:organization", organizationController.Update)
+		group.DELETE("/:organization", organizationController.Destroy)
 	}
 }

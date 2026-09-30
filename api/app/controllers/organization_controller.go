@@ -65,6 +65,24 @@ func (OrganizationController) Store(ctx *gin.Context) {
 	)
 }
 
+func (OrganizationController) Show(ctx *gin.Context) {
+	organizationID, err := strconv.Atoi(ctx.Param("organization"))
+	if err != nil {
+		response(ctx).error("Invalid organization ID", gin.H{}, 400)
+		return
+	}
+
+	user := currentUser(ctx)
+
+	organization, err := (models.Organization{}).FindByID(uint(organizationID), user.ID)
+	if err != nil {
+		response(ctx).error("Organization not found", gin.H{}, 404)
+		return
+	}
+
+	response(ctx).success("Organization fetched successfully!", resources.OrganizationResource(organization), 200)
+}
+
 func (OrganizationController) Update(ctx *gin.Context) {
 	organizationID, err := strconv.Atoi(ctx.Param("organization"))
 	if err != nil {
