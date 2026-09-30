@@ -23,6 +23,7 @@ func Register(router *gin.RouterGroup) {
 
 	group = router.Group("/organizations")
 	{
-		group.GET("/", middlewares.Authenticate(), organizationController.Index)
+		group.GET("", middlewares.Authenticate(), organizationController.Index)
+		group.POST("", middlewares.Authenticate(), organizationController.Store)
 	}
 }
