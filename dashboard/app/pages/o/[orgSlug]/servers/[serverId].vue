@@ -48,7 +48,7 @@ const links = computed(() => {
               >
                 Servers
               </NuxtLink>
-              <span class="text-dimmed text-sm">/</span>
+              <span class="text-muted text-sm">/</span>
               <span class="text-highlighted truncate text-sm font-semibold">
                 {{ server.hostname }}
               </span>

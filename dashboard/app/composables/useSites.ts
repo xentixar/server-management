@@ -1,6 +1,13 @@
 import type { CreateSiteInput, Site } from '~/utils/sites'
 import { defaultWebRoot } from '~/utils/sites'
 
+// ponytail: fixed clock so SSR stub HTML matches client; swap for API later
+const ANCHOR = Date.UTC(2026, 8, 30, 12, 0, 0)
+
+function daysAgo(days: number) {
+  return new Date(ANCHOR - days * 86400000).toISOString()
+}
+
 function sampleSites(): Site[] {
   return [{
     id: 'site_1',
@@ -10,7 +17,7 @@ function sampleSites(): Site[] {
     stack: 'static',
     webRoot: 'public',
     status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString()
+    createdAt: daysAgo(10)
   }, {
     id: 'site_2',
     serverId: 'srv_1',
@@ -21,7 +28,7 @@ function sampleSites(): Site[] {
     status: 'active',
     gitRepo: 'git@github.com:acme/api.git',
     gitBranch: 'main',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString()
+    createdAt: daysAgo(9)
   }, {
     id: 'site_3',
     serverId: 'srv_1',
@@ -30,7 +37,7 @@ function sampleSites(): Site[] {
     stack: 'static',
     webRoot: 'dist',
     status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString()
+    createdAt: daysAgo(7)
   }, {
     id: 'site_4',
     serverId: 'srv_1',
@@ -39,7 +46,7 @@ function sampleSites(): Site[] {
     stack: 'static',
     webRoot: 'public',
     status: 'disabled',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
+    createdAt: daysAgo(5)
   }, {
     id: 'site_5',
     serverId: 'srv_2',
@@ -50,7 +57,7 @@ function sampleSites(): Site[] {
     status: 'active',
     gitRepo: 'git@github.com:acme/shop.git',
     gitBranch: 'main',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString()
+    createdAt: daysAgo(6)
   }, {
     id: 'site_6',
     serverId: 'srv_2',
@@ -61,7 +68,7 @@ function sampleSites(): Site[] {
     status: 'deploying',
     gitRepo: 'git@github.com:acme/admin.git',
     gitBranch: 'main',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString()
+    createdAt: daysAgo(4)
   }, {
     id: 'site_7',
     serverId: 'srv_2',
@@ -70,7 +77,7 @@ function sampleSites(): Site[] {
     stack: 'php',
     webRoot: 'public',
     status: 'failed',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
+    createdAt: daysAgo(2)
   }, {
     id: 'site_8',
     serverId: 'srv_3',
@@ -81,19 +88,17 @@ function sampleSites(): Site[] {
     status: 'active',
     gitRepo: 'git@github.com:acme/jobs.git',
     gitBranch: 'main',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString()
+    createdAt: daysAgo(1)
   }]
 }
 
-// ponytail: local stub until sites API exists; keyed by org id
-const byOrg = reactive<Record<string, Site[]>>({})
-
 function ensure(orgId: string | number): Site[] {
   const key = String(orgId)
-  if (!byOrg[key]) {
-    byOrg[key] = sampleSites()
+  const store = useState<Record<string, Site[]>>('sites-by-org', () => ({}))
+  if (!store.value[key]) {
+    store.value = { ...store.value, [key]: sampleSites() }
   }
-  return byOrg[key]!
+  return store.value[key]!
 }
 
 export function useSites() {

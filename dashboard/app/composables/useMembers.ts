@@ -1,5 +1,8 @@
 import type { MemberRole, MemberStatus, OrgMember } from '~/utils/members'
 
+// ponytail: fixed clock so SSR stub HTML matches client; swap for API later
+const ANCHOR = Date.UTC(2026, 8, 30, 12, 0, 0)
+
 function seedMembers(): OrgMember[] {
   return [{
     id: 'm_you',
@@ -29,19 +32,17 @@ function seedMembers(): OrgMember[] {
     role: 'viewer',
     status: 'invited',
     avatar: { alt: 'jamie@example.com' },
-    invitedAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString()
+    invitedAt: new Date(ANCHOR - 1000 * 60 * 60 * 26).toISOString()
   }]
 }
 
-// ponytail: local stub until members API exists; keyed by org id
-const byOrg = reactive<Record<string, OrgMember[]>>({})
-
 function ensure(orgId: string | number): OrgMember[] {
   const key = String(orgId)
-  if (!byOrg[key]) {
-    byOrg[key] = seedMembers()
+  const store = useState<Record<string, OrgMember[]>>('members-by-org', () => ({}))
+  if (!store.value[key]) {
+    store.value = { ...store.value, [key]: seedMembers() }
   }
-  return byOrg[key]!
+  return store.value[key]!
 }
 
 export function useMembers() {

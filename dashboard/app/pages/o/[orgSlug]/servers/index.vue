@@ -193,6 +193,7 @@ function onAddClick() {
                   icon="i-lucide-ellipsis-vertical"
                   color="neutral"
                   variant="ghost"
+                  aria-label="Server actions"
                 />
               </UDropdownMenu>
             </li>

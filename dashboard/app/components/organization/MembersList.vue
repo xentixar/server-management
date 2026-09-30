@@ -163,6 +163,7 @@ function statusColor(status: OrgMember['status']) {
             icon="i-lucide-ellipsis-vertical"
             color="neutral"
             variant="ghost"
+            aria-label="Member actions"
           />
         </UDropdownMenu>
       </div>

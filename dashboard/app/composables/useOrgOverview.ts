@@ -16,6 +16,12 @@ export interface OverviewActivity {
   at: string
 }
 
+const ANCHOR = Date.UTC(2026, 8, 30, 12, 0, 0)
+
+function ago(ms: number) {
+  return new Date(ANCHOR - ms).toISOString()
+}
+
 function sampleMeta(orgId: string) {
   if (orgId === '1') {
     return {
@@ -43,38 +49,36 @@ function sampleMeta(orgId: string) {
       label: 'Deploy succeeded',
       target: 'api.acme.dev -> main',
       status: 'success' as const,
-      at: new Date(Date.now() - 1000 * 60 * 18).toISOString()
+      at: ago(1000 * 60 * 18)
     }, {
       id: 'act_2',
       label: 'Deploy failed',
       target: 'shop.acme.dev -> release/2.4',
       status: 'failed' as const,
-      at: new Date(Date.now() - 1000 * 60 * 55).toISOString()
+      at: ago(1000 * 60 * 55)
     }, {
       id: 'act_3',
       label: 'Deploy running',
       target: 'docs.acme.dev -> main',
       status: 'running' as const,
-      at: new Date(Date.now() - 1000 * 60 * 4).toISOString()
+      at: ago(1000 * 60 * 4)
     }, {
       id: 'act_4',
       label: 'Server provisioned',
       target: 'edge-01.acme.dev',
       status: 'success' as const,
-      at: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString()
+      at: ago(1000 * 60 * 60 * 26)
     }] satisfies OverviewActivity[]
   }
 }
 
-// ponytail: alerts/activity stay stubbed until events API exists
-const metaByOrg = reactive<Record<string, ReturnType<typeof sampleMeta>>>({})
-
 function ensureMeta(orgId: string | number) {
   const key = String(orgId)
-  if (!metaByOrg[key]) {
-    metaByOrg[key] = sampleMeta(key)
+  const store = useState<Record<string, ReturnType<typeof sampleMeta>>>('org-overview-meta', () => ({}))
+  if (!store.value[key]) {
+    store.value = { ...store.value, [key]: sampleMeta(key) }
   }
-  return metaByOrg[key]!
+  return store.value[key]!
 }
 
 export function useOrgOverview() {

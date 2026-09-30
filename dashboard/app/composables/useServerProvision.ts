@@ -44,23 +44,26 @@ function freshSteps(): ProvisionStep[] {
   return STEP_DEFS.map(s => ({ id: s.id, label: s.label, status: 'pending' as const }))
 }
 
+// ponytail: fixed clock so SSR stub HTML matches client; swap for job stream API later
+const ANCHOR = Date.UTC(2026, 8, 30, 12, 0, 0)
+
 function completedRun(): ProvisionRun {
   return {
     status: 'done',
     steps: STEP_DEFS.map(s => ({ id: s.id, label: s.label, status: 'done' as const })),
     logs: [{
       id: 'seed_1',
-      at: Date.now() - 60000,
+      at: ANCHOR - 60000,
       stream: 'system',
       text: 'Provisioning completed earlier.'
     }, {
       id: 'seed_2',
-      at: Date.now() - 59000,
+      at: ANCHOR - 59000,
       stream: 'stdout',
       text: 'agent: heartbeat ok'
     }],
-    startedAt: Date.now() - 120000,
-    finishedAt: Date.now() - 58000
+    startedAt: ANCHOR - 120000,
+    finishedAt: ANCHOR - 58000
   }
 }
 
@@ -74,15 +77,17 @@ function emptyRun(): ProvisionRun {
   }
 }
 
-// ponytail: simulated provision UI until job stream API exists
-const runs = reactive<Record<string, ProvisionRun>>({})
 const timers = new Map<string, ReturnType<typeof setTimeout>[]>()
 
 function ensureRun(serverId: string, agent: string): ProvisionRun {
-  if (!runs[serverId]) {
-    runs[serverId] = agent === 'pending' ? emptyRun() : completedRun()
+  const store = useState<Record<string, ProvisionRun>>('provision-runs', () => ({}))
+  if (!store.value[serverId]) {
+    store.value = {
+      ...store.value,
+      [serverId]: agent === 'pending' ? emptyRun() : completedRun()
+    }
   }
-  return runs[serverId]!
+  return store.value[serverId]!
 }
 
 function clearTimers(serverId: string) {
@@ -176,16 +181,17 @@ export function useServerProvision(serverId: MaybeRefOrGetter<string>) {
     clearTimers(s.id)
     setAgent(s.id, 'pending')
 
+    const store = useState<Record<string, ProvisionRun>>('provision-runs', () => ({}))
     const next = emptyRun()
     next.status = 'running'
     next.startedAt = Date.now()
-    runs[s.id] = next
+    store.value = { ...store.value, [s.id]: next }
     appendLog(next, 'system', `Provisioning ${s.hostname} (${s.ip})`)
 
     let delay = 400
     STEP_DEFS.forEach((def, index) => {
       pushTimer(s.id, () => {
-        const current = runs[s.id]
+        const current = store.value[s.id]
         if (!current || current.status !== 'running') {
           return
         }
@@ -198,7 +204,7 @@ export function useServerProvision(serverId: MaybeRefOrGetter<string>) {
       delay += 900 + index * 200
 
       pushTimer(s.id, () => {
-        const current = runs[s.id]
+        const current = store.value[s.id]
         if (!current || current.status !== 'running') {
           return
         }

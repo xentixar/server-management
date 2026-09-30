@@ -72,11 +72,10 @@ const items = computed<DropdownMenuItem[][]>(() => {
     :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
   >
     <UButton
-      v-bind="{
-        label: collapsed ? undefined : selected?.name,
-        avatar: selected ? { alt: selected.name } : undefined,
-        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
-      }"
+      :label="collapsed ? undefined : selected?.name"
+      icon="i-lucide-building-2"
+      :trailing-icon="collapsed ? undefined : 'i-lucide-chevrons-up-down'"
+      :aria-label="selected?.name ?? 'Organizations'"
       color="neutral"
       variant="ghost"
       block
@@ -84,7 +83,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       class="data-[state=open]:bg-elevated"
       :class="[!collapsed && 'py-2']"
       :ui="{
-        trailingIcon: 'text-dimmed'
+        trailingIcon: 'text-muted'
       }"
     />
   </UDropdownMenu>
@@ -94,23 +93,24 @@ const items = computed<DropdownMenuItem[][]>(() => {
     title="Create organization"
   >
     <template #body>
-      <UForm
+      <LazyUForm
+        v-if="createOpen"
         :schema="createSchema"
         :state="createState"
         class="flex flex-col gap-4"
         @submit="onCreate"
       >
-        <UFormField
+        <LazyUFormField
           label="Name"
           name="name"
         >
-          <UInput
+          <LazyUInput
             v-model="createState.name"
             placeholder="Acme Inc"
             autofocus
             class="w-full"
           />
-        </UFormField>
+        </LazyUFormField>
 
         <div class="flex justify-end gap-2">
           <UButton
@@ -125,7 +125,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
             :loading="pending"
           />
         </div>
-      </UForm>
+      </LazyUForm>
     </template>
   </UModal>
 </template>

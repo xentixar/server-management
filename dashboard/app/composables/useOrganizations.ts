@@ -3,14 +3,53 @@ import type { Organization } from '~/types'
 
 const LAST_ORG_KEY = 'outpost:last-org-slug'
 
+function orgState() {
+  return {
+    organizations: useState<Organization[]>('organizations', () => []),
+    ready: useState('orgs-ready', () => false),
+    pending: useState('orgs-pending', () => false)
+  }
+}
+
+function rememberSlug(slug: string) {
+  if (import.meta.client) {
+    localStorage.setItem(LAST_ORG_KEY, slug)
+  }
+}
+
+/** Safe to call from middleware / session — no useRoute. */
+export async function ensureOrganizations() {
+  const { api } = useApi()
+  const { organizations, ready, pending } = orgState()
+
+  if (ready.value) {
+    return organizations.value
+  }
+
+  pending.value = true
+  try {
+    const res = await api<Organization[]>('/api/v1/organizations')
+    organizations.value = res.data
+  } finally {
+    ready.value = true
+    pending.value = false
+  }
+
+  return organizations.value
+}
+
+/** Safe to call from middleware / session — no useRoute. */
+export function clearOrganizations() {
+  const { organizations, ready } = orgState()
+  organizations.value = []
+  ready.value = false
+}
+
 const _useOrganizations = () => {
   const { api } = useApi()
   const route = useRoute()
   const router = useRouter()
-
-  const organizations = useState<Organization[]>('organizations', () => [])
-  const ready = useState('orgs-ready', () => false)
-  const pending = useState('orgs-pending', () => false)
+  const { organizations, ready, pending } = orgState()
 
   const routeSlug = computed(() => {
     const raw = route.params.orgSlug
@@ -20,12 +59,6 @@ const _useOrganizations = () => {
   const selected = computed(() => {
     return organizations.value.find(o => o.slug === routeSlug.value) ?? organizations.value[0]
   })
-
-  function rememberSlug(slug: string) {
-    if (import.meta.client) {
-      localStorage.setItem(LAST_ORG_KEY, slug)
-    }
-  }
 
   function resolveLandingSlug() {
     if (import.meta.client) {
@@ -66,30 +99,7 @@ const _useOrganizations = () => {
   }
 
   async function fetchOrganizations() {
-    const res = await api<Organization[]>('/api/v1/organizations')
-    organizations.value = res.data
-    return organizations.value
-  }
-
-  async function ensureOrganizations() {
-    if (ready.value) {
-      return organizations.value
-    }
-
-    pending.value = true
-    try {
-      await fetchOrganizations()
-    } finally {
-      ready.value = true
-      pending.value = false
-    }
-
-    return organizations.value
-  }
-
-  function clearOrganizations() {
-    organizations.value = []
-    ready.value = false
+    return ensureOrganizations()
   }
 
   async function create(name: string) {

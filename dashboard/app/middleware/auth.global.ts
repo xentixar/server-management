@@ -26,5 +26,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     })
   }
 
-  await useOrganizations().ensureOrganizations()
+  await ensureOrganizations()
 })
+

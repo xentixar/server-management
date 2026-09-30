@@ -9,17 +9,6 @@ const { overview, isEmpty } = useOrgOverview()
 const { currentPlan, subscription } = useBilling()
 const toast = useToast()
 
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 12) {
-    return 'Good morning'
-  }
-  if (hour < 18) {
-    return 'Good afternoon'
-  }
-  return 'Good evening'
-})
-
 const stats = computed(() => [{
   label: 'Servers',
   value: overview.value.servers,
@@ -48,19 +37,6 @@ function activityColor(status: OverviewActivity['status']) {
   return 'primary' as const
 }
 
-function relativeTime(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.round(diff / 60000)
-  if (mins < 60) {
-    return `${Math.max(mins, 1)}m ago`
-  }
-  const hours = Math.round(mins / 60)
-  if (hours < 48) {
-    return `${hours}h ago`
-  }
-  return formatDate(iso)
-}
-
 function onTerraformSoon() {
   toast.add({
     title: 'Coming later',
@@ -86,23 +62,20 @@ function onTerraformSoon() {
             text="Notifications"
             :shortcuts="['N']"
           >
-            <UButton
-              color="neutral"
-              variant="ghost"
-              square
-              @click="isNotificationsSlideoverOpen = true"
+            <UChip
+              color="error"
+              :show="overview.openAlerts > 0"
+              inset
             >
-              <UChip
-                color="error"
-                :show="overview.openAlerts > 0"
-                inset
-              >
-                <UIcon
-                  name="i-lucide-bell"
-                  class="size-5 shrink-0"
-                />
-              </UChip>
-            </UButton>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                square
+                icon="i-lucide-bell"
+                aria-label="Notifications"
+                @click="isNotificationsSlideoverOpen = true"
+              />
+            </UChip>
           </UTooltip>
 
           <UButton
@@ -117,12 +90,9 @@ function onTerraformSoon() {
     <template #body>
       <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 sm:p-6 lg:p-8">
         <header class="flex flex-col gap-1">
-          <p class="text-muted text-sm">
-            {{ greeting }}
-          </p>
-          <h1 class="text-highlighted text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 class="text-highlighted text-2xl font-semibold tracking-tight sm:text-3xl">
             {{ selected?.name }}
-          </h1>
+          </h2>
           <p class="text-muted max-w-2xl text-sm">
             Operations overview for this organization. Status, deploys, and alerts surface here first.
           </p>
@@ -143,7 +113,7 @@ function onTerraformSoon() {
             <p class="text-highlighted text-2xl font-semibold tabular-nums">
               {{ stat.value }}
             </p>
-            <p class="text-dimmed text-xs">
+            <p class="text-muted text-xs">
               {{ stat.hint }}
             </p>
           </div>
@@ -227,7 +197,7 @@ function onTerraformSoon() {
                   <UBadge
                     :label="server.agent"
                     :color="agentBadgeColor(server.agent)"
-                    variant="subtle"
+                    variant="outline"
                     class="capitalize"
                   />
                 </NuxtLink>
@@ -295,7 +265,7 @@ function onTerraformSoon() {
                 <UBadge
                   :label="item.status"
                   :color="activityColor(item.status)"
-                  variant="subtle"
+                  variant="outline"
                   class="capitalize"
                 />
                 <div class="min-w-0 text-sm">
@@ -308,10 +278,10 @@ function onTerraformSoon() {
                 </div>
               </div>
               <time
-                class="text-dimmed text-xs tabular-nums"
+                class="text-muted text-xs tabular-nums"
                 :datetime="item.at"
               >
-                {{ relativeTime(item.at) }}
+                {{ formatDate(item.at) }}
               </time>
             </li>
           </ul>

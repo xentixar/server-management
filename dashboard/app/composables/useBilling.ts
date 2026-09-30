@@ -7,6 +7,13 @@ import type {
 } from '~/utils/billing'
 import { planById } from '~/utils/billing'
 
+// ponytail: fixed clock so SSR stub HTML matches client; swap for API later
+const ANCHOR = Date.UTC(2026, 8, 30, 12, 0, 0)
+
+function daysFromAnchor(days: number) {
+  return new Date(ANCHOR + days * 86400000).toISOString()
+}
+
 function defaultSubscription(orgId: string): SubscriptionState {
   if (orgId === '1') {
     return {
@@ -38,7 +45,7 @@ function defaultSubscription(orgId: string): SubscriptionState {
     planId: 'pro',
     interval: 'monthly',
     status: 'active',
-    renewsAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 20).toISOString(),
+    renewsAt: daysFromAnchor(20),
     cancelAtPeriodEnd: false,
     usage: { servers: 3, sites: 8, seats: 3 },
     paymentMethod: {
@@ -57,23 +64,21 @@ function defaultSubscription(orgId: string): SubscriptionState {
   }
 }
 
-// ponytail: local stub until billing API exists; keyed by org id
-const byOrg = reactive<Record<string, SubscriptionState>>({})
-
 function ensure(orgId: string | number): SubscriptionState {
   const key = String(orgId)
-  if (!byOrg[key]) {
-    byOrg[key] = defaultSubscription(key)
+  const store = useState<Record<string, SubscriptionState>>('billing-by-org', () => ({}))
+  if (!store.value[key]) {
+    store.value = { ...store.value, [key]: defaultSubscription(key) }
   }
-  return byOrg[key]!
+  return store.value[key]!
 }
 
 function nextRenewal(interval: BillingInterval) {
-  const d = new Date()
+  const d = new Date(ANCHOR)
   if (interval === 'yearly') {
-    d.setFullYear(d.getFullYear() + 1)
+    d.setUTCFullYear(d.getUTCFullYear() + 1)
   } else {
-    d.setMonth(d.getMonth() + 1)
+    d.setUTCMonth(d.getUTCMonth() + 1)
   }
   return d.toISOString()
 }

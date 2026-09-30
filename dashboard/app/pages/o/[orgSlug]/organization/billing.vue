@@ -102,7 +102,7 @@ function statusColor(status: Invoice['status']) {
 
 <template>
   <div class="flex flex-col gap-4 sm:gap-6">
-    <UAlert
+    <LazyUAlert
       v-if="subscription.cancelAtPeriodEnd"
       color="warning"
       variant="subtle"
@@ -119,7 +119,7 @@ function statusColor(status: Invoice['status']) {
           @click="onResume"
         />
       </template>
-    </UAlert>
+    </LazyUAlert>
 
     <div>
       <UPageCard
@@ -148,14 +148,14 @@ function statusColor(status: Invoice['status']) {
                 <UBadge
                   :label="subscription.status"
                   color="neutral"
-                  variant="subtle"
+                  variant="outline"
                   class="capitalize"
                 />
               </div>
               <p class="text-muted text-sm">
                 {{ priceLabel }} · {{ renewalLabel }}
               </p>
-              <p class="text-dimmed text-xs">
+              <p class="text-muted text-xs">
                 {{ currentPlan.description }}
               </p>
             </div>
@@ -314,20 +314,23 @@ function statusColor(status: Invoice['status']) {
       </UPageCard>
     </div>
 
-    <OrganizationChangePlanModal
+    <LazyOrganizationChangePlanModal
+      v-if="changeOpen"
       v-model:open="changeOpen"
       :current-plan-id="subscription.planId"
       :current-interval="subscription.interval"
       @confirm="onPlanConfirm"
     />
 
-    <OrganizationPaymentMethodModal
+    <LazyOrganizationPaymentMethodModal
+      v-if="paymentOpen"
       v-model:open="paymentOpen"
       :method="subscription.paymentMethod"
       @save="onPaymentSave"
     />
 
     <UModal
+      v-if="cancelOpen"
       v-model:open="cancelOpen"
       title="Cancel plan?"
       description="You keep access until the end of the billing period. You can resume anytime before then."

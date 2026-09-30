@@ -20,6 +20,12 @@ export default defineNuxtConfig({
     apiBase: 'http://localhost:8080'
   },
 
+  hints: {
+    features: {
+      lazyLoad: { logs: false }
+    }
+  },
+
   routeRules: {
     '/api/**': {
       cors: true

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { formatTimeAgo } from '@vueuse/core'
 import type { Notification } from '~/types'
+import { formatDate } from '~/utils/billing'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
 
@@ -38,12 +38,13 @@ const { data: notifications } = await useFetch<Notification[]>('/api/notificatio
               <time
                 :datetime="notification.date"
                 class="text-muted shrink-0 text-xs"
-                v-text="formatTimeAgo(new Date(notification.date))"
-              />
+              >
+                {{ formatDate(notification.date) }}
+              </time>
             </p>
             <p
               v-if="notification.body"
-              class="text-dimmed mt-0.5"
+              class="text-muted mt-0.5"
             >
               {{ notification.body }}
             </p>

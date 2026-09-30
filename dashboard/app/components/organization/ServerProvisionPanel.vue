@@ -138,7 +138,7 @@ function formatLogTime(at: number) {
             >
               {{ step.label }}
             </p>
-            <p class="text-dimmed text-xs capitalize">
+            <p class="text-muted text-xs capitalize">
               {{ step.status }}
             </p>
           </div>

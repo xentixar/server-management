@@ -23,7 +23,6 @@ const links = computed(() => [[{
   label: 'Organization',
   to: orgHref('/organization'),
   icon: 'i-lucide-building-2',
-  defaultOpen: true,
   type: 'trigger',
   children: [{
     label: 'General',
@@ -90,7 +89,9 @@ const groups = computed(() => [{
 
     <UDashboardSearch :groups="groups" />
 
-    <slot />
+    <main class="flex min-h-0 min-w-0 flex-1 flex-col">
+      <slot />
+    </main>
 
     <NotificationsSlideover />
   </UDashboardGroup>

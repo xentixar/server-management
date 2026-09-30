@@ -104,9 +104,10 @@ export function formatMoney(amount: number, interval?: BillingInterval) {
 }
 
 export function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'UTC'
   })
 }

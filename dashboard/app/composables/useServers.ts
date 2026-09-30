@@ -1,5 +1,12 @@
 import type { CreateServerInput, Server } from '~/utils/servers'
 
+// ponytail: fixed clock so SSR stub HTML matches client; swap for API later
+const ANCHOR = Date.UTC(2026, 8, 30, 12, 0, 0)
+
+function daysAgo(days: number) {
+  return new Date(ANCHOR - days * 86400000).toISOString()
+}
+
 function sampleServers(): Server[] {
   return [{
     id: 'srv_1',
@@ -13,7 +20,7 @@ function sampleServers(): Server[] {
     labels: ['edge'],
     agent: 'online',
     sites: 4,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString()
+    createdAt: daysAgo(12)
   }, {
     id: 'srv_2',
     hostname: 'app-02.acme.dev',
@@ -26,7 +33,7 @@ function sampleServers(): Server[] {
     labels: ['app'],
     agent: 'degraded',
     sites: 3,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString()
+    createdAt: daysAgo(8)
   }, {
     id: 'srv_3',
     hostname: 'worker-03.acme.dev',
@@ -39,19 +46,17 @@ function sampleServers(): Server[] {
     labels: ['worker'],
     agent: 'offline',
     sites: 1,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString()
+    createdAt: daysAgo(3)
   }]
 }
 
-// ponytail: local stub until servers API exists; keyed by org id
-const byOrg = reactive<Record<string, Server[]>>({})
-
 function ensure(orgId: string | number): Server[] {
   const key = String(orgId)
-  if (!byOrg[key]) {
-    byOrg[key] = sampleServers()
+  const store = useState<Record<string, Server[]>>('servers-by-org', () => ({}))
+  if (!store.value[key]) {
+    store.value = { ...store.value, [key]: sampleServers() }
   }
-  return byOrg[key]!
+  return store.value[key]!
 }
 
 export function useServers() {
