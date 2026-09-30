@@ -13,39 +13,43 @@ const { data: notifications } = await useFetch<Notification[]>('/api/notificatio
     title="Notifications"
   >
     <template #body>
-      <div
-        v-for="notification in notifications"
-        :key="notification.id"
-        class="px-3 py-2.5 rounded-md hover:bg-elevated/50 flex items-center gap-3 relative -mx-3 first:-mt-3 last:-mb-3"
+      <p
+        v-if="!notifications?.length"
+        class="text-muted text-sm"
       >
-        <UChip
-          color="error"
-          :show="!!notification.unread"
-          inset
+        No notifications yet.
+      </p>
+
+      <template v-else>
+        <div
+          v-for="notification in notifications"
+          :key="notification.id"
+          class="relative -mx-3 flex items-start gap-3 rounded-md px-3 py-2.5 first:-mt-3 last:-mb-3 hover:bg-elevated/50"
         >
-          <UAvatar
-            v-bind="notification.sender.avatar"
-            :alt="notification.sender.name"
-            size="md"
+          <span
+            class="mt-1.5 size-2 shrink-0 rounded-full"
+            :class="notification.unread ? 'bg-primary' : 'bg-transparent'"
+            aria-hidden="true"
           />
-        </UChip>
 
-        <div class="text-sm flex-1">
-          <p class="flex items-center justify-between">
-            <span class="text-highlighted font-medium">{{ notification.sender.name }}</span>
-
-            <time
-              :datetime="notification.date"
-              class="text-muted text-xs"
-              v-text="formatTimeAgo(new Date(notification.date))"
-            />
-          </p>
-
-          <p class="text-dimmed">
-            {{ notification.body }}
-          </p>
+          <div class="min-w-0 flex-1 text-sm">
+            <p class="flex items-baseline justify-between gap-3">
+              <span class="text-highlighted font-medium">{{ notification.title }}</span>
+              <time
+                :datetime="notification.date"
+                class="text-muted shrink-0 text-xs"
+                v-text="formatTimeAgo(new Date(notification.date))"
+              />
+            </p>
+            <p
+              v-if="notification.body"
+              class="text-dimmed mt-0.5"
+            >
+              {{ notification.body }}
+            </p>
+          </div>
         </div>
-      </div>
+      </template>
     </template>
   </USlideover>
 </template>
