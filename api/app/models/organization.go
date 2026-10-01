@@ -67,10 +67,18 @@ func (Organization) FindOwnedByID(ctx context.Context, id uint, ownerID uint, wi
 	return query.First(ctx)
 }
 
-func (Organization) FindOwnedByUser(ctx context.Context, ownerID uint) ([]Organization, error) {
+func (Organization) FindByMember(ctx context.Context, userID uint) ([]Organization, error) {
 	return gorm.
 		G[Organization](config.GetDatabase()).
-		Where("user_id = ?", ownerID).
+		Where(
+			`EXISTS (
+				SELECT 1 FROM organization_members
+				WHERE organization_members.organization_id = organizations.id
+				AND organization_members.user_id = ?
+				AND organization_members.deleted_at IS NULL
+			)`,
+			userID,
+		).
 		Find(ctx)
 }
 

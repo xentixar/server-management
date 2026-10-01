@@ -15,7 +15,7 @@ type OrganizationController struct{}
 func (OrganizationController) List(ctx *gin.Context) {
 	user := currentUser(ctx)
 
-	organizations, err := (models.Organization{}).FindOwnedByUser(ctx, user.ID)
+	organizations, err := (models.Organization{}).FindByMember(ctx, user.ID)
 	if err != nil {
 		respond(ctx).fail("Failed to fetch organizations", gin.H{}, 500)
 		return
