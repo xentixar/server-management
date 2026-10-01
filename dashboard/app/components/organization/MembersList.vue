@@ -3,6 +3,7 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import type { AssignableRole, MemberRole, OrgMember } from '~/utils/members'
 import { ASSIGNABLE_ROLE_OPTIONS, ROLE_OPTIONS, roleLabel } from '~/utils/members'
 import { ApiError } from '~/utils/api'
+import { Ability } from '~/utils/auth/abilities'
 
 const props = defineProps<{
   members: OrgMember[]
@@ -14,6 +15,7 @@ const emit = defineEmits<{
 }>()
 
 const { setRole } = useMembers()
+const { can } = useGate()
 const toast = useToast()
 
 function roleItems(member: OrgMember) {
@@ -23,8 +25,14 @@ function roleItems(member: OrgMember) {
   return ASSIGNABLE_ROLE_OPTIONS
 }
 
+function canEditRole(member: OrgMember) {
+  return can(Ability.MembersUpdate)
+    && member.role !== 'owner'
+    && member.id !== props.currentUserId
+}
+
 async function onRoleChange(member: OrgMember, role: MemberRole) {
-  if (role === member.role || role === 'owner') {
+  if (role === member.role || role === 'owner' || !canEditRole(member)) {
     return
   }
   try {
@@ -41,7 +49,7 @@ async function onRoleChange(member: OrgMember, role: MemberRole) {
 }
 
 function menuItems(member: OrgMember): DropdownMenuItem[][] {
-  if (member.id === props.currentUserId) {
+  if (!can(Ability.MembersRemove) || member.id === props.currentUserId || member.role === 'owner') {
     return []
   }
   return [[{
@@ -85,13 +93,20 @@ function menuItems(member: OrgMember): DropdownMenuItem[][] {
 
       <div class="flex shrink-0 items-center gap-2 sm:gap-3">
         <USelect
+          v-if="can(Ability.MembersUpdate)"
           :model-value="member.role"
           :items="roleItems(member)"
           value-key="value"
           color="neutral"
           class="w-32"
-          :disabled="member.role === 'owner' || member.id === currentUserId"
+          :disabled="!canEditRole(member)"
           @update:model-value="(value) => onRoleChange(member, value as MemberRole)"
+        />
+        <UBadge
+          v-else
+          :label="roleLabel(member.role)"
+          color="neutral"
+          variant="outline"
         />
 
         <UDropdownMenu

@@ -66,6 +66,40 @@ func (OrganizationMember) FindByID(
 	return query.First(ctx)
 }
 
+func (OrganizationMember) FindByUser(
+	ctx context.Context,
+	organizationID uint,
+	userID uint,
+) (*OrganizationMember, error) {
+	member, err := gorm.G[OrganizationMember](config.GetDatabase()).
+		Where("organization_id = ? AND user_id = ?", organizationID, userID).
+		First(ctx)
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &member, nil
+}
+
+func (OrganizationMember) RolesByUser(ctx context.Context, userID uint) (map[uint]string, error) {
+	members, err := gorm.G[OrganizationMember](config.GetDatabase()).
+		Where("user_id = ?", userID).
+		Find(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	roles := make(map[uint]string, len(members))
+	for _, member := range members {
+		roles[member.OrganizationID] = member.Role
+	}
+	return roles, nil
+}
+
 func (OrganizationMember) FindByEmail(
 	ctx context.Context,
 	organizationID uint,

@@ -22,7 +22,7 @@ export async function ensureOrganizations() {
   const { api } = useApi()
   const { organizations, ready, pending } = orgState()
 
-  if (ready.value) {
+  if (ready.value && organizations.value.every(o => Array.isArray(o.permissions))) {
     return organizations.value
   }
 

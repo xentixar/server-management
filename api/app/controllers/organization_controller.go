@@ -1,9 +1,8 @@
 package controllers
 
 import (
-	"strconv"
-
 	"api/app/models"
+	"api/app/policies"
 	"api/app/requests"
 	"api/app/resources"
 
@@ -21,17 +20,29 @@ func (OrganizationController) List(ctx *gin.Context) {
 		return
 	}
 
-	respond(ctx).ok("Organization fetched successfully!", resources.OrganizationCollection(organizations), 200)
-}
-
-func (OrganizationController) Create(ctx *gin.Context) {
-	var req requests.OrganizationRequest
-
-	if !bindJSON(ctx, &req) {
+	roles, err := (models.OrganizationMember{}).RolesByUser(ctx, user.ID)
+	if err != nil {
+		respond(ctx).fail("Failed to fetch organization roles", gin.H{}, 500)
 		return
 	}
 
+	respond(ctx).ok(
+		"Organization fetched successfully!",
+		resources.OrganizationCollection(organizations, roles),
+		200,
+	)
+}
+
+func (OrganizationController) Create(ctx *gin.Context) {
 	user := currentUser(ctx)
+	if !denyUnless(ctx, (policies.OrganizationPolicy{}).Create(user)) {
+		return
+	}
+
+	var req requests.OrganizationRequest
+	if !bindJSON(ctx, &req) {
+		return
+	}
 
 	slug, err := (models.Organization{}).GenerateUniqueSlug(ctx, req.Name)
 	if err != nil {
@@ -52,46 +63,47 @@ func (OrganizationController) Create(ctx *gin.Context) {
 
 	respond(ctx).ok(
 		"Organization created successfully!",
-		resources.OrganizationResource(organization),
+		resources.OrganizationResource(organization, "owner"),
 		201,
 	)
 }
 
 func (OrganizationController) Get(ctx *gin.Context) {
-	organizationID, err := strconv.Atoi(ctx.Param("organization"))
-	if err != nil {
-		respond(ctx).fail("Invalid organization ID", gin.H{}, 400)
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
 		return
 	}
 
-	user := currentUser(ctx)
-
-	organization, err := (models.Organization{}).FindOwnedByID(ctx, uint(organizationID), user.ID)
-	if err != nil {
-		respond(ctx).fail("Organization not found", gin.H{}, 404)
+	organization, member, ok := requireOrgMember(ctx, organizationID)
+	if !ok {
+		return
+	}
+	if !denyUnless(ctx, (policies.OrganizationPolicy{}).View(member)) {
 		return
 	}
 
-	respond(ctx).ok("Organization fetched successfully!", resources.OrganizationResource(organization), 200)
+	respond(ctx).ok(
+		"Organization fetched successfully!",
+		resources.OrganizationResource(organization, member.Role),
+		200,
+	)
 }
 
 func (OrganizationController) Update(ctx *gin.Context) {
-	organizationID, err := strconv.Atoi(ctx.Param("organization"))
-	if err != nil {
-		respond(ctx).fail("Invalid organization ID", gin.H{}, 400)
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
 		return
 	}
 
-	user := currentUser(ctx)
-
-	organization, err := (models.Organization{}).FindOwnedByID(ctx, uint(organizationID), user.ID)
-	if err != nil {
-		respond(ctx).fail("Organization not found", gin.H{}, 404)
+	organization, member, ok := requireOrgMember(ctx, organizationID)
+	if !ok {
+		return
+	}
+	if !denyUnless(ctx, (policies.OrganizationPolicy{}).Update(member)) {
 		return
 	}
 
 	var req requests.OrganizationRequest
-
 	if !bindJSON(ctx, &req) {
 		return
 	}
@@ -114,23 +126,22 @@ func (OrganizationController) Update(ctx *gin.Context) {
 
 	respond(ctx).ok(
 		"Organization updated successfully!",
-		resources.OrganizationResource(organization),
+		resources.OrganizationResource(organization, member.Role),
 		200,
 	)
 }
 
 func (OrganizationController) Delete(ctx *gin.Context) {
-	organizationID, err := strconv.Atoi(ctx.Param("organization"))
-	if err != nil {
-		respond(ctx).fail("Invalid organization ID", gin.H{}, 400)
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
 		return
 	}
 
-	user := currentUser(ctx)
-
-	organization, err := (models.Organization{}).FindOwnedByID(ctx, uint(organizationID), user.ID)
-	if err != nil {
-		respond(ctx).fail("Organization not found", gin.H{}, 404)
+	organization, member, ok := requireOrgMember(ctx, organizationID)
+	if !ok {
+		return
+	}
+	if !denyUnless(ctx, (policies.OrganizationPolicy{}).Delete(member)) {
 		return
 	}
 

@@ -2,8 +2,10 @@
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { ApiError } from '~/utils/api'
+import { Ability } from '~/utils/auth/abilities'
 
 const { selected, updateSelected, removeSelected, pending } = useOrganizations()
+const { can } = useGate()
 const toast = useToast()
 const deleteOpen = ref(false)
 const deleting = ref(false)
@@ -83,6 +85,7 @@ async function onDeleteConfirm() {
         class="mb-4"
       >
         <UButton
+          v-if="can(Ability.OrganizationUpdate)"
           form="organization-general"
           label="Save changes"
           color="neutral"
@@ -103,6 +106,7 @@ async function onDeleteConfirm() {
           <UInput
             v-model="state.name"
             autocomplete="off"
+            :readonly="!can(Ability.OrganizationUpdate)"
           />
         </UFormField>
 
@@ -123,6 +127,7 @@ async function onDeleteConfirm() {
     </UForm>
 
     <UPageCard
+      v-if="can(Ability.OrganizationDelete)"
       title="Danger zone"
       description="Delete this organization and all of its servers, sites, and members. This cannot be undone."
       class="bg-linear-to-tl from-error/10 from-5% to-default"
@@ -137,6 +142,7 @@ async function onDeleteConfirm() {
     </UPageCard>
 
     <OrganizationDeleteOrganizationModal
+      v-if="can(Ability.OrganizationDelete)"
       v-model:open="deleteOpen"
       :organization="selected"
       :loading="deleting"

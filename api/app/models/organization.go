@@ -67,6 +67,27 @@ func (Organization) FindOwnedByID(ctx context.Context, id uint, ownerID uint, wi
 	return query.First(ctx)
 }
 
+func (Organization) FindForMember(ctx context.Context, id uint, userID uint, withRelations ...string) (Organization, error) {
+	query := gorm.
+		G[Organization](config.GetDatabase()).
+		Where(
+			`id = ? AND EXISTS (
+				SELECT 1 FROM organization_members
+				WHERE organization_members.organization_id = organizations.id
+				AND organization_members.user_id = ?
+				AND organization_members.deleted_at IS NULL
+			)`,
+			id,
+			userID,
+		)
+
+	for _, relation := range withRelations {
+		query = query.Preload(relation, nil)
+	}
+
+	return query.First(ctx)
+}
+
 func (Organization) FindByMember(ctx context.Context, userID uint) ([]Organization, error) {
 	return gorm.
 		G[Organization](config.GetDatabase()).

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { formatDate, formatMoney } from '~/utils/billing'
 import type { Invoice } from '~/utils/billing'
+import { Ability } from '~/utils/auth/abilities'
 
 const { selected } = useOrganizations()
+const { can } = useGate()
 const {
   subscription,
   currentPlan,
@@ -130,6 +132,7 @@ function statusColor(status: Invoice['status']) {
         class="mb-4"
       >
         <UButton
+          v-if="can(Ability.BillingManage)"
           label="Change plan"
           color="neutral"
           class="w-fit lg:ms-auto"
@@ -161,7 +164,7 @@ function statusColor(status: Invoice['status']) {
             </div>
 
             <UButton
-              v-if="subscription.planId !== 'free' && !subscription.cancelAtPeriodEnd"
+              v-if="can(Ability.BillingManage) && subscription.planId !== 'free' && !subscription.cancelAtPeriodEnd"
               label="Cancel plan"
               color="error"
               variant="ghost"
@@ -220,6 +223,7 @@ function statusColor(status: Invoice['status']) {
         class="mb-4"
       >
         <UButton
+          v-if="can(Ability.BillingManage)"
           :label="subscription.paymentMethod ? 'Update' : 'Add card'"
           color="neutral"
           class="w-fit lg:ms-auto"

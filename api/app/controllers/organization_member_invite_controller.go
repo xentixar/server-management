@@ -3,6 +3,7 @@ package controllers
 import (
 	"api/app/constants"
 	"api/app/models"
+	"api/app/policies"
 	"api/app/requests"
 	"api/app/resources"
 
@@ -17,10 +18,11 @@ func (OrganizationMemberInviteController) List(ctx *gin.Context) {
 		return
 	}
 
-	user := currentUser(ctx)
-
-	if _, err := (models.Organization{}).FindOwnedByID(ctx, organizationID, user.ID); err != nil {
-		respond(ctx).fail("Organization not found", gin.H{}, 404)
+	_, actor, ok := requireOrgMember(ctx, organizationID)
+	if !ok {
+		return
+	}
+	if !denyUnless(ctx, (policies.MemberPolicy{}).ViewInvites(actor)) {
 		return
 	}
 
@@ -43,11 +45,11 @@ func (OrganizationMemberInviteController) Create(ctx *gin.Context) {
 		return
 	}
 
-	user := currentUser(ctx)
-
-	organization, err := (models.Organization{}).FindOwnedByID(ctx, organizationID, user.ID)
-	if err != nil {
-		respond(ctx).fail("Organization not found", gin.H{}, 404)
+	organization, actor, ok := requireOrgMember(ctx, organizationID)
+	if !ok {
+		return
+	}
+	if !denyUnless(ctx, (policies.MemberPolicy{}).Invite(actor)) {
 		return
 	}
 
@@ -148,10 +150,11 @@ func (OrganizationMemberInviteController) Delete(ctx *gin.Context) {
 		return
 	}
 
-	user := currentUser(ctx)
-
-	if _, err := (models.Organization{}).FindOwnedByID(ctx, organizationID, user.ID); err != nil {
-		respond(ctx).fail("Organization not found", gin.H{}, 404)
+	_, actor, ok := requireOrgMember(ctx, organizationID)
+	if !ok {
+		return
+	}
+	if !denyUnless(ctx, (policies.MemberPolicy{}).RevokeInvite(actor)) {
 		return
 	}
 

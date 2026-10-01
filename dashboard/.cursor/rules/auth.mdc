@@ -1,0 +1,30 @@
+---
+description: Auth, session, org membership, and Filament-style ability gates for the Outpost dashboard
+globs: app/**/*.{ts,vue}
+alwaysApply: false
+---
+
+# Auth & permissions
+
+Full guide: [docs/AUTH.md](../../docs/AUTH.md). Agent summary: [AGENTS.md](../../AGENTS.md).
+
+## Do
+
+- Call the API with `useApi().api()` only.
+- Gate UI with `useGate()` + `Ability` from `~/utils/auth/abilities`.
+- Await `fetchAll()` on members (and similar) for SSR.
+- Keep invite `redirect` as a path; pass `email` as a separate query param.
+- Reuse `/login` and `/register` for invite onboarding — no duplicate auth forms.
+
+## Don't
+
+- Check `role === 'owner' | 'admin'` for feature access (use `can(Ability…)`).
+- Duplicate role→permission maps in the frontend.
+- Put secrets or tokens in `localStorage` (token is the `outpost_token` cookie).
+- Nest query strings inside `redirect=`.
+
+## New ability checklist
+
+1. API `permissions.go` + `roles.go` + policy method + controller check
+2. Add matching key to `app/utils/auth/abilities.ts`
+3. `v-if="can(Ability.NewKey)"` (API still enforces)

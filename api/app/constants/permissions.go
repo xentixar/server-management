@@ -1,22 +1,36 @@
 package constants
 
-type Permission struct {
-	Key   string
-	Label string
-}
-
 const (
-	PermissionOrganizationCreate = "organization.create"
-	PermissionOrganizationList   = "organization.list"
-	PermissionOrganizationShow   = "organization.show"
-	PermissionOrganizationUpdate = "organization.update"
-	PermissionOrganizationDelete = "organization.delete"
+	OrganizationCreate = "organization.create"
+	OrganizationList   = "organization.list"
+	OrganizationShow   = "organization.show"
+	OrganizationUpdate = "organization.update"
+	OrganizationDelete = "organization.delete"
+
+	MembersView   = "organization.members.view"
+	MembersInvite = "organization.members.invite"
+	MembersUpdate = "organization.members.update"
+	MembersRemove = "organization.members.remove"
+
+	InvitesView   = "organization.invites.view"
+	InvitesRevoke = "organization.invites.revoke"
+
+	BillingView   = "organization.billing.view"
+	BillingManage = "organization.billing.manage"
 )
 
-var Permissions = []Permission{
-	{Key: PermissionOrganizationCreate, Label: "Create Organization"},
-	{Key: PermissionOrganizationList, Label: "List Organizations"},
-	{Key: PermissionOrganizationShow, Label: "View Organization"},
-	{Key: PermissionOrganizationUpdate, Label: "Update Organization"},
-	{Key: PermissionOrganizationDelete, Label: "Delete Organization"},
+var AllAbilities = []string{
+	OrganizationCreate,
+	OrganizationList,
+	OrganizationShow,
+	OrganizationUpdate,
+	OrganizationDelete,
+	MembersView,
+	MembersInvite,
+	MembersUpdate,
+	MembersRemove,
+	InvitesView,
+	InvitesRevoke,
+	BillingView,
+	BillingManage,
 }

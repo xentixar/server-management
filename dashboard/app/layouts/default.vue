@@ -1,55 +1,78 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
+import { Ability } from '~/utils/auth/abilities'
+
 const open = ref(false)
 const { orgHref } = useOrganizations()
+const { can } = useGate()
 
-const links = computed(() => [[{
-  label: 'Home',
-  icon: 'i-lucide-house',
-  to: orgHref(),
-  exact: true,
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Servers',
-  icon: 'i-lucide-server',
-  to: orgHref('/servers'),
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Organization',
-  to: orgHref('/organization'),
-  icon: 'i-lucide-building-2',
-  type: 'trigger',
-  children: [{
+const links = computed(() => {
+  const orgChildren: NavigationMenuItem[] = [{
     label: 'General',
     to: orgHref('/organization'),
     exact: true,
     onSelect: () => {
       open.value = false
     }
-  }, {
-    label: 'Members',
-    to: orgHref('/organization/members'),
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Billing',
-    to: orgHref('/organization/billing'),
-    onSelect: () => {
-      open.value = false
-    }
   }]
-}]] satisfies NavigationMenuItem[][])
+
+  if (can(Ability.MembersView)) {
+    orgChildren.push({
+      label: 'Members',
+      to: orgHref('/organization/members'),
+      onSelect: () => {
+        open.value = false
+      }
+    })
+  }
+
+  if (can(Ability.BillingView)) {
+    orgChildren.push({
+      label: 'Billing',
+      to: orgHref('/organization/billing'),
+      onSelect: () => {
+        open.value = false
+      }
+    })
+  }
+
+  return [[{
+    label: 'Home',
+    icon: 'i-lucide-house',
+    to: orgHref(),
+    exact: true,
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Servers',
+    icon: 'i-lucide-server',
+    to: orgHref('/servers'),
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Organization',
+    to: orgHref('/organization'),
+    icon: 'i-lucide-building-2',
+    type: 'trigger',
+    children: orgChildren
+  }]] satisfies NavigationMenuItem[][]
+})
 
 const groups = computed(() => [{
   id: 'links',
   label: 'Go to',
-  items: links.value.flat()
+  items: links.value.flat().flatMap((item) => {
+    const leaves = item.children?.length ? item.children : [item]
+    return leaves.map(leaf => ({
+      label: leaf.label,
+      to: leaf.to,
+      icon: leaf.icon,
+      onSelect: leaf.onSelect
+    }))
+  })
 }])
 </script>
 

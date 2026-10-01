@@ -2,6 +2,7 @@
 import type { AssignableRole, OrgInvite, OrgMember } from '~/utils/members'
 import { formatDate } from '~/utils/billing'
 import { ApiError } from '~/utils/api'
+import { Ability } from '~/utils/auth/abilities'
 
 const {
   members,
@@ -14,6 +15,7 @@ const {
   remove
 } = useMembers()
 const { selected } = useOrganizations()
+const { can } = useGate()
 
 await fetchAll()
 
@@ -22,6 +24,10 @@ const q = ref('')
 const inviteOpen = ref(false)
 const removeOpen = ref(false)
 const memberToRemove = ref<OrgMember | null>(null)
+
+const visibleInvites = computed(() =>
+  can(Ability.InvitesView) ? pendingInvites.value : []
+)
 
 function inviteLink(email: string) {
   const org = selected.value
@@ -127,6 +133,7 @@ async function onCopyLink(email: string) {
         class="mb-4"
       >
         <UButton
+          v-if="can(Ability.MembersInvite)"
           label="Invite people"
           color="neutral"
           icon="i-lucide-user-plus"
@@ -169,10 +176,10 @@ async function onCopyLink(email: string) {
       </UPageCard>
     </div>
 
-    <div v-if="pendingInvites.length">
+    <div v-if="visibleInvites.length">
       <UPageCard
         title="Pending invites"
-        :description="`${pendingInvites.length} waiting to accept.`"
+        :description="`${visibleInvites.length} waiting to accept.`"
         variant="naked"
         class="mb-4"
       />
@@ -186,7 +193,7 @@ async function onCopyLink(email: string) {
           class="divide-y divide-default"
         >
           <li
-            v-for="inviteRow in pendingInvites"
+            v-for="inviteRow in visibleInvites"
             :key="inviteRow.id"
             class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6"
           >
@@ -201,6 +208,7 @@ async function onCopyLink(email: string) {
             </div>
             <div class="flex items-center gap-2">
               <UButton
+                v-if="can(Ability.MembersInvite)"
                 label="Copy link"
                 color="neutral"
                 variant="ghost"
@@ -208,6 +216,7 @@ async function onCopyLink(email: string) {
                 @click="onCopyLink(inviteRow.email)"
               />
               <UButton
+                v-if="can(Ability.InvitesRevoke)"
                 label="Revoke"
                 color="error"
                 variant="ghost"
@@ -221,11 +230,13 @@ async function onCopyLink(email: string) {
     </div>
 
     <OrganizationInviteMemberModal
+      v-if="can(Ability.MembersInvite)"
       v-model:open="inviteOpen"
       @invite="onInvite"
     />
 
     <OrganizationRemoveMemberModal
+      v-if="can(Ability.MembersRemove)"
       v-model:open="removeOpen"
       :member="memberToRemove"
       @confirm="onConfirmRemove"

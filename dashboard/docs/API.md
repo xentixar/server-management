@@ -1,47 +1,43 @@
 # API integration (dashboard)
 
-How the Nuxt app will connect to the **Go control plane** once `api/` exists. Server-side behavior is documented in [../../docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md).
+How the Nuxt app talks to the **Go control plane**. Server architecture: [../../docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md). Auth details: [AUTH.md](AUTH.md).
 
-## Configuration (planned)
+## Configuration
 
 ```ts
 // nuxt.config.ts
 runtimeConfig: {
-  public: {
-    apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080'
-  }
+  apiBase: 'http://localhost:8080' // override with NUXT_API_BASE
 }
 ```
 
+Browser calls same-origin `/api/v1/*`; Nitro proxies to `apiBase` (avoids CORS, attaches auth in `useApi`).
+
 ## Access pattern
 
-Replace mock Nitro routes in `server/api/*.ts` with either:
+Use **`useApi().api<T>(path, options)`** for all authenticated control-plane requests.
 
-- **Proxy** — Nitro `$fetch` to API with cookie forwarding (preferred for httpOnly sessions), or
-- **Direct** — browser `$fetch` to API with CORS + credentials.
+- Sends `Authorization: Bearer` from the `outpost_token` cookie.
+- Expects `{ success, message, data }` envelopes (`~/utils/api`).
+- Do not duplicate business rules in Nitro — proxy only.
 
-Do not duplicate business logic in Nitro; use it only as a BFF/proxy if needed.
-
-## Composables (planned)
+## Composables
 
 | Composable | Purpose |
 |------------|---------|
-| `useSession` | Current user, login/logout |
-| `useOrg` | Active org from switcher, list memberships |
-| `useServer` | Server detail, agent status |
-| `useSite` | Site detail, deploy trigger |
-| `useJob` | Poll or stream long-running job logs |
+| `useSession` | User, login/register/logout, `ensureSession` |
+| `useOrganizations` | Memberships, selected org by slug, CRUD |
+| `useMembers` | Members + invites for selected org |
+| `useGate` | `can` / `cannot` over `selected.permissions` |
+| `useServers` / `useSites` / `useBilling` | Local stubs until those APIs land |
 
-## Types
+## Types & abilities
 
-- Align `app/types/` with Go API structs or generated OpenAPI client.
+- Org from API: `{ id, name, slug, role?, permissions? }`.
+- Ability strings: `app/utils/auth/abilities.ts` (must match `api/app/constants/permissions.go`).
 - Zod schemas for forms mirror API request bodies.
 
-## Real-time
+## Real-time (planned)
 
 - Deploy/provision logs: SSE or WebSocket from API, keyed by job ID.
 - Notifications: poll or push into `NotificationsSlideover`.
-
-## Current behavior
-
-Template demo data is served from `server/api/customers.ts`, `members.ts`, etc. Remove or proxy when the API lands ([ROADMAP.md](ROADMAP.md)).

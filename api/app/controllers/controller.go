@@ -61,3 +61,29 @@ func uintParam(ctx *gin.Context, name, invalidMessage string) (uint, bool) {
 
 	return uint(id), true
 }
+
+func requireOrgMember(ctx *gin.Context, organizationID uint, withRelations ...string) (models.Organization, models.OrganizationMember, bool) {
+	user := currentUser(ctx)
+
+	organization, err := (models.Organization{}).FindForMember(ctx, organizationID, user.ID, withRelations...)
+	if err != nil {
+		respond(ctx).fail("Organization not found", gin.H{}, http.StatusNotFound)
+		return models.Organization{}, models.OrganizationMember{}, false
+	}
+
+	member, err := (models.OrganizationMember{}).FindByUser(ctx, organizationID, user.ID)
+	if err != nil || member == nil {
+		respond(ctx).fail("Organization not found", gin.H{}, http.StatusNotFound)
+		return models.Organization{}, models.OrganizationMember{}, false
+	}
+
+	return organization, *member, true
+}
+
+func denyUnless(ctx *gin.Context, allowed bool) bool {
+	if allowed {
+		return true
+	}
+	respond(ctx).fail("Forbidden", gin.H{}, http.StatusForbidden)
+	return false
+}
