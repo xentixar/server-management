@@ -6,12 +6,24 @@ definePageMeta({ layout: 'auth' })
 
 useSeoMeta({ title: 'Create account - Outpost' })
 
+const route = useRoute()
 const toast = useToast()
-const { register, pending } = useSession()
+const { register, login, pending } = useSession()
+
+const redirect = computed(() =>
+  typeof route.query.redirect === 'string' ? route.query.redirect : null
+)
+const loginTo = computed(() => ({
+  path: '/login',
+  query: {
+    ...(redirect.value ? { redirect: redirect.value } : {}),
+    ...(typeof route.query.email === 'string' ? { email: route.query.email } : {})
+  }
+}))
 
 const state = reactive<Partial<RegisterSchema>>({
   name: '',
-  email: '',
+  email: typeof route.query.email === 'string' ? route.query.email : '',
   password: '',
   confirmPassword: ''
 })
@@ -19,12 +31,20 @@ const state = reactive<Partial<RegisterSchema>>({
 async function onSubmit() {
   try {
     await register(state.name!, state.email!, state.password!)
+    if (redirect.value) {
+      await login(state.email!, state.password!)
+      await navigateTo(redirect.value)
+      return
+    }
     toast.add({
       title: 'Account created',
       description: 'Sign in with your new credentials.',
       color: 'success'
     })
-    await navigateTo('/login')
+    await navigateTo({
+      path: '/login',
+      query: { email: state.email! }
+    })
   } catch (error) {
     const err = error instanceof ApiError ? error : new ApiError('Registration failed', 500)
     toast.add({
@@ -118,7 +138,7 @@ async function onSubmit() {
       <p class="text-muted text-center text-sm">
         Already have an account?
         <NuxtLink
-          to="/login"
+          :to="loginTo"
           class="text-primary font-medium"
         >
           Sign in

@@ -1,166 +1,160 @@
-import type { MemberRole, MemberStatus, OrgMember } from '~/utils/members'
+import { createSharedComposable } from '@vueuse/core'
+import type { AssignableRole, OrgInvite, OrgMember } from '~/utils/members'
+import { ApiError } from '~/utils/api'
 
-// ponytail: fixed clock so SSR stub HTML matches client; swap for API later
-const ANCHOR = Date.UTC(2026, 8, 30, 12, 0, 0)
-
-function seedMembers(): OrgMember[] {
-  return [{
-    id: 'm_you',
-    name: 'Outpost User',
-    email: 'you@outpost.dev',
-    role: 'owner',
-    status: 'active',
-    avatar: { alt: 'Outpost User' }
-  }, {
-    id: 'm_alex',
-    name: 'Alex Smith',
-    email: 'alex@example.com',
-    role: 'admin',
-    status: 'active',
-    avatar: { alt: 'Alex Smith' }
-  }, {
-    id: 'm_sam',
-    name: 'Sam Rivera',
-    email: 'sam@example.com',
-    role: 'member',
-    status: 'active',
-    avatar: { alt: 'Sam Rivera' }
-  }, {
-    id: 'm_invite_1',
-    name: 'jamie@example.com',
-    email: 'jamie@example.com',
-    role: 'viewer',
-    status: 'invited',
-    avatar: { alt: 'jamie@example.com' },
-    invitedAt: new Date(ANCHOR - 1000 * 60 * 60 * 26).toISOString()
-  }]
-}
-
-function ensure(orgId: string | number): OrgMember[] {
-  const key = String(orgId)
-  const store = useState<Record<string, OrgMember[]>>('members-by-org', () => ({}))
-  if (!store.value[key]) {
-    store.value = { ...store.value, [key]: seedMembers() }
+function membersState() {
+  return {
+    members: useState<OrgMember[]>('org-members', () => []),
+    invites: useState<OrgInvite[]>('org-invites', () => []),
+    ready: useState('org-members-ready', () => false),
+    pending: useState('org-members-pending', () => false),
+    loadedOrgId: useState<number | null>('org-members-org', () => null)
   }
-  return store.value[key]!
 }
 
-export function useMembers() {
+/** Safe to call from session clear — no useRoute. */
+export function clearMembers() {
+  const { members, invites, ready, loadedOrgId } = membersState()
+  members.value = []
+  invites.value = []
+  ready.value = false
+  loadedOrgId.value = null
+}
+
+const _useMembers = () => {
+  const { api } = useApi()
   const { selected } = useOrganizations()
+  const { user } = useSession()
+  const { members, invites, ready, pending, loadedOrgId } = membersState()
 
-  const members = computed(() => ensure(selected.value?.id ?? '_'))
-
-  const activeMembers = computed(() =>
-    members.value.filter(m => m.status === 'active' || m.status === 'suspended')
-  )
-
-  const pendingInvites = computed(() =>
-    members.value.filter(m => m.status === 'invited')
+  const currentMember = computed(() =>
+    members.value.find(m => m.email === user.value?.email) ?? null
   )
 
   const ownerCount = computed(() =>
-    members.value.filter(m => m.role === 'owner' && m.status !== 'invited').length
+    members.value.filter(m => m.role === 'owner').length
   )
 
-  function invite(email: string, role: MemberRole) {
-    const list = ensure(selected.value?.id ?? '_')
-    const normalized = email.trim().toLowerCase()
-    if (list.some(m => m.email.toLowerCase() === normalized)) {
-      return { ok: false as const, error: 'That email is already a member or invited.' }
+  function orgPath(suffix: string) {
+    const org = selected.value
+    if (!org) {
+      throw new ApiError('No organization selected', 400)
     }
-    if (role === 'owner') {
-      return { ok: false as const, error: 'Invite as admin or below, then transfer ownership.' }
-    }
-
-    const member: OrgMember = {
-      id: `m_${Date.now()}`,
-      name: normalized,
-      email: normalized,
-      role,
-      status: 'invited',
-      avatar: { alt: normalized },
-      invitedAt: new Date().toISOString()
-    }
-    list.unshift(member)
-    return { ok: true as const, member }
+    return `/api/v1/organizations/${org.id}${suffix}`
   }
 
-  function setRole(id: string, role: MemberRole) {
-    const list = ensure(selected.value?.id ?? '_')
-    const member = list.find(m => m.id === id)
+  async function fetchAll(force = false) {
+    const org = selected.value
+    if (!org) {
+      clearMembers()
+      return
+    }
+
+    if (!force && ready.value && loadedOrgId.value === org.id) {
+      return
+    }
+
+    pending.value = true
+    try {
+      const [membersRes, invitesRes] = await Promise.all([
+        api<OrgMember[]>(orgPath('/members')),
+        api<OrgInvite[]>(orgPath('/invites'))
+      ])
+      members.value = membersRes.data
+      invites.value = invitesRes.data
+      loadedOrgId.value = org.id
+      ready.value = true
+    } finally {
+      pending.value = false
+    }
+  }
+
+  async function invite(email: string, role: AssignableRole) {
+    await api(orgPath('/invites'), {
+      method: 'POST',
+      body: { email: email.trim().toLowerCase(), role }
+    })
+    await fetchAll(true)
+  }
+
+  async function setRole(id: number, role: AssignableRole) {
+    const member = members.value.find(m => m.id === id)
     if (!member) {
-      return { ok: false as const, error: 'Member not found.' }
-    }
-
-    if (member.role === 'owner' && role !== 'owner' && ownerCount.value <= 1) {
-      return { ok: false as const, error: 'Keep at least one owner.' }
-    }
-
-    member.role = role
-    return { ok: true as const, member }
-  }
-
-  function setStatus(id: string, status: MemberStatus) {
-    const list = ensure(selected.value?.id ?? '_')
-    const member = list.find(m => m.id === id)
-    if (!member) {
-      return { ok: false as const, error: 'Member not found.' }
-    }
-    if (member.role === 'owner' && status === 'suspended' && ownerCount.value <= 1) {
-      return { ok: false as const, error: 'Cannot suspend the only owner.' }
-    }
-    member.status = status
-    return { ok: true as const, member }
-  }
-
-  function resendInvite(id: string) {
-    const list = ensure(selected.value?.id ?? '_')
-    const member = list.find(m => m.id === id && m.status === 'invited')
-    if (!member) {
-      return { ok: false as const, error: 'Invite not found.' }
-    }
-    member.invitedAt = new Date().toISOString()
-    return { ok: true as const, member }
-  }
-
-  function revokeInvite(id: string) {
-    const list = ensure(selected.value?.id ?? '_')
-    const index = list.findIndex(m => m.id === id && m.status === 'invited')
-    if (index === -1) {
-      return { ok: false as const, error: 'Invite not found.' }
-    }
-    const [removed] = list.splice(index, 1)
-    return { ok: true as const, member: removed! }
-  }
-
-  function remove(id: string) {
-    const list = ensure(selected.value?.id ?? '_')
-    const member = list.find(m => m.id === id)
-    if (!member) {
-      return { ok: false as const, error: 'Member not found.' }
+      throw new ApiError('Member not found', 404)
     }
     if (member.role === 'owner' && ownerCount.value <= 1) {
-      return { ok: false as const, error: 'Cannot remove the only owner.' }
-    }
-    if (member.id === 'm_you') {
-      return { ok: false as const, error: 'You cannot remove yourself here.' }
+      throw new ApiError('Keep at least one owner', 422)
     }
 
-    const index = list.findIndex(m => m.id === id)
-    list.splice(index, 1)
-    return { ok: true as const, member }
+    const res = await api<OrgMember>(orgPath(`/members/${id}`), {
+      method: 'PATCH',
+      body: { role }
+    })
+    const idx = members.value.findIndex(m => m.id === id)
+    if (idx !== -1) {
+      members.value[idx] = res.data
+    }
+    return res.data
   }
+
+  async function revokeInvite(id: number) {
+    await api(orgPath(`/invites/${id}`), { method: 'DELETE' })
+    invites.value = invites.value.filter(i => i.id !== id)
+  }
+
+  async function remove(id: number) {
+    const member = members.value.find(m => m.id === id)
+    if (!member) {
+      throw new ApiError('Member not found', 404)
+    }
+    if (member.role === 'owner' && ownerCount.value <= 1) {
+      throw new ApiError('Cannot remove the only owner', 422)
+    }
+    if (member.email === user.value?.email) {
+      throw new ApiError('You cannot remove yourself here', 422)
+    }
+
+    await api(orgPath(`/members/${id}`), { method: 'DELETE' })
+    members.value = members.value.filter(m => m.id !== id)
+    return member
+  }
+
+  async function acceptInvite(organizationId: number) {
+    await api(`/api/v1/organizations/${organizationId}/invites/accept`, {
+      method: 'POST'
+    })
+  }
+
+  watch(() => selected.value?.id, (id, prev) => {
+    if (id === prev) {
+      return
+    }
+    if (!id) {
+      clearMembers()
+      return
+    }
+    if (id !== loadedOrgId.value) {
+      ready.value = false
+      fetchAll()
+    }
+  })
 
   return {
     members,
-    activeMembers,
-    pendingInvites,
+    invites,
+    pendingInvites: invites,
+    ready,
+    pending,
+    currentMember,
     ownerCount,
+    fetchAll,
     invite,
     setRole,
-    setStatus,
-    resendInvite,
     revokeInvite,
-    remove
+    remove,
+    acceptInvite,
+    clearMembers
   }
 }
+
+export const useMembers = createSharedComposable(_useMembers)

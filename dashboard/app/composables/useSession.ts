@@ -82,12 +82,18 @@ const _useSession = () => {
     token.value = null
     user.value = null
     clearOrganizations()
+    clearMembers()
   }
 
   async function logout() {
     clearSession()
     ready.value = true
     await navigateTo('/login')
+  }
+
+  function signOutLocal() {
+    clearSession()
+    ready.value = true
   }
 
   return {
@@ -101,6 +107,7 @@ const _useSession = () => {
     login,
     register,
     logout,
+    signOutLocal,
     clearSession
   }
 }

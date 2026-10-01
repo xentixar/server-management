@@ -10,16 +10,26 @@ const route = useRoute()
 const toast = useToast()
 const { login, pending } = useSession()
 
+const redirect = computed(() =>
+  typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+)
+const registerTo = computed(() => ({
+  path: '/register',
+  query: {
+    ...(redirect.value !== '/' ? { redirect: redirect.value } : {}),
+    ...(typeof route.query.email === 'string' ? { email: route.query.email } : {})
+  }
+}))
+
 const state = reactive<Partial<LoginSchema>>({
-  email: '',
+  email: typeof route.query.email === 'string' ? route.query.email : '',
   password: ''
 })
 
 async function onSubmit() {
   try {
     await login(state.email!, state.password!)
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-    await navigateTo(redirect)
+    await navigateTo(redirect.value)
   } catch (error) {
     const err = error instanceof ApiError ? error : new ApiError('Sign in failed', 500)
     toast.add({
@@ -98,7 +108,7 @@ async function onSubmit() {
       <p class="text-muted text-center text-sm">
         No account?
         <NuxtLink
-          to="/register"
+          :to="registerTo"
           class="text-primary font-medium"
         >
           Create one

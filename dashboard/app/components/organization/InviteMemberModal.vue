@@ -1,38 +1,36 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { MemberRole } from '~/utils/members'
-import { MEMBER_ROLES, ROLE_OPTIONS } from '~/utils/members'
+import type { AssignableRole } from '~/utils/members'
+import { ASSIGNABLE_ROLES, ASSIGNABLE_ROLE_OPTIONS } from '~/utils/members'
 
 const open = defineModel<boolean>('open', { default: false })
 
 const emit = defineEmits<{
-  invite: [email: string, role: MemberRole]
+  invite: [email: string, role: AssignableRole]
 }>()
-
-const inviteRoles = ROLE_OPTIONS.filter(r => r.value !== 'owner')
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
-  role: z.enum(['admin', 'member', 'viewer'])
+  role: z.enum(['admin', 'viewer'])
 })
 
 type Schema = z.output<typeof schema>
 
 const state = reactive<Partial<Schema>>({
   email: '',
-  role: 'member'
+  role: 'viewer'
 })
 
 watch(open, (isOpen) => {
   if (isOpen) {
     state.email = ''
-    state.role = 'member'
+    state.role = 'viewer'
   }
 })
 
 const roleHint = computed(() =>
-  MEMBER_ROLES.find(r => r.value === state.role)?.description ?? ''
+  ASSIGNABLE_ROLES.find(r => r.value === state.role)?.description ?? ''
 )
 
 function onSubmit(event: FormSubmitEvent<Schema>) {
@@ -44,7 +42,7 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
   <UModal
     v-model:open="open"
     title="Invite member"
-    description="They get an email with a link to join this organization."
+    description="They can accept the invite while signed in with this email."
   >
     <template #body>
       <UForm
@@ -74,7 +72,7 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
         >
           <USelect
             v-model="state.role"
-            :items="inviteRoles"
+            :items="ASSIGNABLE_ROLE_OPTIONS"
             value-key="value"
             class="w-full"
           />

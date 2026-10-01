@@ -1,106 +1,55 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { MemberRole, OrgMember } from '~/utils/members'
-import { ROLE_OPTIONS, roleLabel } from '~/utils/members'
+import type { AssignableRole, MemberRole, OrgMember } from '~/utils/members'
+import { ASSIGNABLE_ROLE_OPTIONS, ROLE_OPTIONS, roleLabel } from '~/utils/members'
+import { ApiError } from '~/utils/api'
 
 const props = defineProps<{
   members: OrgMember[]
-  currentUserId?: string
+  currentUserId?: number | null
 }>()
 
 const emit = defineEmits<{
   remove: [member: OrgMember]
-  resend: [member: OrgMember]
-  revoke: [member: OrgMember]
 }>()
 
-const { setRole, setStatus } = useMembers()
+const { setRole } = useMembers()
 const toast = useToast()
 
-function onRoleChange(member: OrgMember, role: MemberRole) {
-  if (role === member.role) {
+function roleItems(member: OrgMember) {
+  if (member.role === 'owner') {
+    return ROLE_OPTIONS
+  }
+  return ASSIGNABLE_ROLE_OPTIONS
+}
+
+async function onRoleChange(member: OrgMember, role: MemberRole) {
+  if (role === member.role || role === 'owner') {
     return
   }
-  const result = setRole(member.id, role)
-  if (!result.ok) {
-    toast.add({ title: result.error, color: 'error' })
-    return
+  try {
+    await setRole(member.id, role as AssignableRole)
+    toast.add({
+      title: 'Role updated',
+      description: `${member.name} is now ${roleLabel(role)}.`,
+      color: 'success'
+    })
+  } catch (error) {
+    const err = error instanceof ApiError ? error : new ApiError('Update failed', 500)
+    toast.add({ title: err.message, color: 'error' })
   }
-  toast.add({
-    title: 'Role updated',
-    description: `${member.name} is now ${roleLabel(role)}.`,
-    color: 'success'
-  })
 }
 
 function menuItems(member: OrgMember): DropdownMenuItem[][] {
-  const isSelf = member.id === props.currentUserId
-  const rows: DropdownMenuItem[][] = []
-
-  if (member.status === 'invited') {
-    rows.push([{
-      label: 'Resend invite',
-      icon: 'i-lucide-mail',
-      onSelect: () => emit('resend', member)
-    }, {
-      label: 'Revoke invite',
-      icon: 'i-lucide-x',
-      color: 'error',
-      onSelect: () => emit('revoke', member)
-    }])
-    return rows
+  if (member.id === props.currentUserId) {
+    return []
   }
-
-  if (member.status === 'active') {
-    rows.push([{
-      label: 'Suspend access',
-      icon: 'i-lucide-pause',
-      onSelect: () => {
-        const result = setStatus(member.id, 'suspended')
-        if (!result.ok) {
-          toast.add({ title: result.error, color: 'error' })
-          return
-        }
-        toast.add({ title: 'Member suspended', color: 'neutral' })
-      }
-    }])
-  }
-
-  if (member.status === 'suspended') {
-    rows.push([{
-      label: 'Restore access',
-      icon: 'i-lucide-play',
-      onSelect: () => {
-        const result = setStatus(member.id, 'active')
-        if (!result.ok) {
-          toast.add({ title: result.error, color: 'error' })
-          return
-        }
-        toast.add({ title: 'Access restored', color: 'success' })
-      }
-    }])
-  }
-
-  if (!isSelf) {
-    rows.push([{
-      label: 'Remove member',
-      icon: 'i-lucide-user-minus',
-      color: 'error',
-      onSelect: () => emit('remove', member)
-    }])
-  }
-
-  return rows
-}
-
-function statusColor(status: OrgMember['status']) {
-  if (status === 'active') {
-    return 'success' as const
-  }
-  if (status === 'invited') {
-    return 'warning' as const
-  }
-  return 'neutral' as const
+  return [[{
+    label: 'Remove member',
+    icon: 'i-lucide-user-minus',
+    color: 'error',
+    onSelect: () => emit('remove', member)
+  }]]
 }
 </script>
 
@@ -116,28 +65,18 @@ function statusColor(status: OrgMember['status']) {
     >
       <div class="flex min-w-0 items-center gap-3">
         <UAvatar
-          v-bind="member.avatar"
           :alt="member.name"
           size="md"
         />
 
         <div class="min-w-0 text-sm">
-          <div class="flex flex-wrap items-center gap-2">
-            <p class="text-highlighted truncate font-medium">
-              {{ member.name }}
-              <span
-                v-if="member.id === currentUserId"
-                class="text-muted font-normal"
-              >(you)</span>
-            </p>
-            <UBadge
-              :label="member.status"
-              :color="statusColor(member.status)"
-              variant="subtle"
-              size="sm"
-              class="capitalize"
-            />
-          </div>
+          <p class="text-highlighted truncate font-medium">
+            {{ member.name }}
+            <span
+              v-if="member.id === currentUserId"
+              class="text-muted font-normal"
+            >(you)</span>
+          </p>
           <p class="text-muted truncate">
             {{ member.email }}
           </p>
@@ -147,15 +86,16 @@ function statusColor(status: OrgMember['status']) {
       <div class="flex shrink-0 items-center gap-2 sm:gap-3">
         <USelect
           :model-value="member.role"
-          :items="ROLE_OPTIONS"
+          :items="roleItems(member)"
           value-key="value"
           color="neutral"
           class="w-32"
-          :disabled="member.status === 'invited'"
+          :disabled="member.role === 'owner' || member.id === currentUserId"
           @update:model-value="(value) => onRoleChange(member, value as MemberRole)"
         />
 
         <UDropdownMenu
+          v-if="menuItems(member).length"
           :items="menuItems(member)"
           :content="{ align: 'end' }"
         >

@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import type { MemberRole, OrgMember } from '~/utils/members'
+import type { AssignableRole, OrgInvite, OrgMember } from '~/utils/members'
 import { formatDate } from '~/utils/billing'
+import { ApiError } from '~/utils/api'
 
 const {
-  activeMembers,
+  members,
   pendingInvites,
+  pending,
+  currentMember,
+  fetchAll,
   invite,
-  resendInvite,
   revokeInvite,
   remove
 } = useMembers()
+const { selected } = useOrganizations()
+
+await fetchAll()
 
 const toast = useToast()
 const q = ref('')
@@ -17,31 +23,46 @@ const inviteOpen = ref(false)
 const removeOpen = ref(false)
 const memberToRemove = ref<OrgMember | null>(null)
 
-const currentUserId = 'm_you'
+function inviteLink(email: string) {
+  const org = selected.value
+  if (!org) {
+    return ''
+  }
+  const url = new URL(`/invites/${org.id}`, window.location.origin)
+  url.searchParams.set('email', email)
+  return url.toString()
+}
 
 const filteredActive = computed(() => {
   const query = q.value.trim().toLowerCase()
   if (!query) {
-    return activeMembers.value
+    return members.value
   }
-  return activeMembers.value.filter((member) => {
+  return members.value.filter((member) => {
     return member.name.toLowerCase().includes(query)
       || member.email.toLowerCase().includes(query)
   })
 })
 
-function onInvite(email: string, role: MemberRole) {
-  const result = invite(email, role)
-  if (!result.ok) {
-    toast.add({ title: result.error, color: 'error' })
-    return
+async function onInvite(email: string, role: AssignableRole) {
+  try {
+    await invite(email, role)
+    inviteOpen.value = false
+    const link = inviteLink(email)
+    if (import.meta.client && link && navigator.clipboard) {
+      await navigator.clipboard.writeText(link).catch(() => null)
+    }
+    toast.add({
+      title: 'Invite sent',
+      description: link
+        ? `Link copied for ${email}. Share it so they can accept.`
+        : `${email} was invited as ${role}.`,
+      color: 'success'
+    })
+  } catch (error) {
+    const err = error instanceof ApiError ? error : new ApiError('Invite failed', 500)
+    toast.add({ title: err.message, color: 'error' })
   }
-  inviteOpen.value = false
-  toast.add({
-    title: 'Invite sent',
-    description: `${email} was invited as ${role}. Local stub until the API is wired.`,
-    color: 'success'
-  })
 }
 
 function onAskRemove(member: OrgMember) {
@@ -49,47 +70,49 @@ function onAskRemove(member: OrgMember) {
   removeOpen.value = true
 }
 
-function onConfirmRemove() {
+async function onConfirmRemove() {
   if (!memberToRemove.value) {
     return
   }
-  const result = remove(memberToRemove.value.id)
-  if (!result.ok) {
-    toast.add({ title: result.error, color: 'error' })
-    return
+  try {
+    const removed = await remove(memberToRemove.value.id)
+    toast.add({
+      title: 'Member removed',
+      description: removed.email,
+      color: 'neutral'
+    })
+    memberToRemove.value = null
+  } catch (error) {
+    const err = error instanceof ApiError ? error : new ApiError('Remove failed', 500)
+    toast.add({ title: err.message, color: 'error' })
   }
-  toast.add({
-    title: 'Member removed',
-    description: result.member.email,
-    color: 'neutral'
-  })
-  memberToRemove.value = null
 }
 
-function onResend(member: OrgMember) {
-  const result = resendInvite(member.id)
-  if (!result.ok) {
-    toast.add({ title: result.error, color: 'error' })
-    return
+async function onRevoke(inviteRow: OrgInvite) {
+  try {
+    await revokeInvite(inviteRow.id)
+    toast.add({
+      title: 'Invite revoked',
+      description: inviteRow.email,
+      color: 'neutral'
+    })
+  } catch (error) {
+    const err = error instanceof ApiError ? error : new ApiError('Revoke failed', 500)
+    toast.add({ title: err.message, color: 'error' })
   }
-  toast.add({
-    title: 'Invite resent',
-    description: member.email,
-    color: 'success'
-  })
 }
 
-function onRevoke(member: OrgMember) {
-  const result = revokeInvite(member.id)
-  if (!result.ok) {
-    toast.add({ title: result.error, color: 'error' })
+async function onCopyLink(email: string) {
+  const link = inviteLink(email)
+  if (!link) {
     return
   }
-  toast.add({
-    title: 'Invite revoked',
-    description: member.email,
-    color: 'neutral'
-  })
+  try {
+    await navigator.clipboard.writeText(link)
+    toast.add({ title: 'Invite link copied', color: 'success' })
+  } catch {
+    toast.add({ title: 'Could not copy link', description: link, color: 'error' })
+  }
 }
 </script>
 
@@ -125,13 +148,17 @@ function onRevoke(member: OrgMember) {
           />
         </template>
 
+        <div
+          v-if="pending && !members.length"
+          class="text-muted px-4 py-6 text-sm sm:px-6"
+        >
+          Loading members…
+        </div>
         <OrganizationMembersList
-          v-if="filteredActive.length"
+          v-else-if="filteredActive.length"
           :members="filteredActive"
-          :current-user-id="currentUserId"
+          :current-user-id="currentMember?.id"
           @remove="onAskRemove"
-          @resend="onResend"
-          @revoke="onRevoke"
         />
         <p
           v-else
@@ -169,16 +196,16 @@ function onRevoke(member: OrgMember) {
               </p>
               <p class="text-muted">
                 {{ inviteRow.role }} · invited
-                {{ inviteRow.invitedAt ? formatDate(inviteRow.invitedAt) : '' }}
+                {{ formatDate(inviteRow.created_at) }}
               </p>
             </div>
             <div class="flex items-center gap-2">
               <UButton
-                label="Resend"
+                label="Copy link"
                 color="neutral"
                 variant="ghost"
                 size="sm"
-                @click="onResend(inviteRow)"
+                @click="onCopyLink(inviteRow.email)"
               />
               <UButton
                 label="Revoke"
