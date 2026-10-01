@@ -38,19 +38,16 @@ func (OrganizationMember) Assign(
 		Role:           role.Name,
 	}
 
-	return config.GetDatabase().
-		WithContext(ctx).
-		Clauses(clause.OnConflict{
-			Columns: []clause.Column{
-				{Name: "organization_id"},
-				{Name: "user_id"},
-			},
-			DoUpdates: clause.AssignmentColumns([]string{
-				"role",
-				"updated_at",
-			}),
-		}).
-		Create(&member).Error
+	return gorm.G[OrganizationMember](config.GetDatabase(), clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "organization_id"},
+			{Name: "user_id"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"role",
+			"updated_at",
+		}),
+	}).Create(ctx, &member)
 }
 
 func (OrganizationMember) FindOneByEmail(
@@ -58,16 +55,12 @@ func (OrganizationMember) FindOneByEmail(
 	organizationID uint,
 	email string,
 ) (*OrganizationMember, error) {
-	user, err := (User{}).FindByEmail(ctx, email)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
 	member, err := gorm.G[OrganizationMember](config.GetDatabase()).
-		Where("organization_id = ? AND user_id = ?", organizationID, user.ID).
+		Joins(clause.Has("User"), func(db gorm.JoinBuilder, joinTable clause.Table, curTable clause.Table) error {
+			db.Where("?.email = ?", clause.Column{Table: joinTable.Name, Name: "email"}, email)
+			return nil
+		}).
+		Where("organization_id = ?", organizationID).
 		First(ctx)
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
