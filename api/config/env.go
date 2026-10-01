@@ -1,4 +1,4 @@
-// Package config contains all configuration related stuffs
+// Package config loads environment settings and exposes shared infrastructure such as the database.
 package config
 
 import (

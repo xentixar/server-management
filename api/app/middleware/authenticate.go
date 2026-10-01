@@ -1,5 +1,5 @@
-// Package middlewares contains application level middlewares
-package middlewares
+// Package middleware provides Gin middleware for authentication and request logging.
+package middleware
 
 import (
 	"net/http"

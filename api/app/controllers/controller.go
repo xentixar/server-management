@@ -1,11 +1,11 @@
-// Package controllers contains all the controllers
+// Package controllers handles HTTP request and response logic for API endpoints.
 package controllers
 
 import (
 	"net/http"
 
 	"api/app/models"
-	"api/utils"
+	"api/app/validators"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +38,7 @@ func (r Response) error(message string, errors any, code int) {
 
 func validate(context *gin.Context, request any) bool {
 	if err := context.ShouldBindJSON(request); err != nil {
-		fieldErrors := utils.FormatValidationErrors(err, request)
+		fieldErrors := validators.FormatValidationErrors(err, request)
 
 		response(context).error(
 			"Validation error",

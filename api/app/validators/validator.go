@@ -1,4 +1,4 @@
-// Package validators contains all custom validators
+// Package validators registers custom validation rules and formats validation errors.
 package validators
 
 import (

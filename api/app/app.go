@@ -1,4 +1,4 @@
-// Package app contains application logics
+// Package app boots the HTTP server, wires dependencies, and runs the API.
 package app
 
 import (
@@ -8,18 +8,18 @@ import (
 	"time"
 
 	"api/app/models"
+	"api/app/routes"
 	"api/app/validators"
 	"api/config"
-	"api/routes"
 )
 
 func Initialize() {
 	config.LoadEnv()
-	config.InitializeRouting()
+	InitializeRouting()
 	config.InitializeDatabase()
 	validators.Register()
 
-	group := config.GetRouter().Group("/api/v1")
+	group := GetRouter().Group("/api/v1")
 	{
 		routes.Register(group)
 	}
@@ -36,7 +36,7 @@ func Initialize() {
 func Run() {
 	server := &http.Server{
 		Addr:              ":" + config.ENV("APP_PORT"),
-		Handler:           config.GetRouter(),
+		Handler:           GetRouter(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

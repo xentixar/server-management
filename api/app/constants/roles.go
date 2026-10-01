@@ -1,4 +1,4 @@
-// Package constants contains all static constant data
+// Package constants defines roles, permissions, and other static application values.
 package constants
 
 type Role struct {

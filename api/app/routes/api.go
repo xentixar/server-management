@@ -1,9 +1,9 @@
-// Package routes register all routes
+// Package routes registers the API v1 HTTP endpoints.
 package routes
 
 import (
 	"api/app/controllers"
-	"api/app/middlewares"
+	"api/app/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,10 +21,10 @@ func Register(router *gin.RouterGroup) {
 	{
 		group.POST("/login", authController.Login)
 		group.POST("/register", authController.Register)
-		group.GET("/user", middlewares.Authenticate(), authController.GetUser)
+		group.GET("/user", middleware.Authenticate(), authController.GetUser)
 	}
 
-	group = router.Group("/organizations", middlewares.Authenticate())
+	group = router.Group("/organizations", middleware.Authenticate())
 	{
 		group.GET("", organizationController.Index)
 		group.POST("", organizationController.Store)

@@ -1,4 +1,4 @@
-// Package requests contains validations
+// Package requests defines inbound API payloads and their validation rules.
 package requests
 
 type LoginRequest struct {

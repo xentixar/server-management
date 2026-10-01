@@ -1,5 +1,4 @@
-// Package utils contains utility functions
-package utils
+package validators
 
 import (
 	"errors"

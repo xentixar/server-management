@@ -1,4 +1,4 @@
-// Package resources contains all the resource mappings
+// Package resources maps domain models to API response payloads.
 package resources
 
 import "api/app/models"

@@ -1,4 +1,4 @@
-package utils
+package helpers
 
 import (
 	"regexp"
@@ -20,7 +20,6 @@ func Slugify(input string) string {
 	}
 
 	slug := b.String()
-
 	slug = regexp.MustCompile(`-+`).ReplaceAllString(slug, "-")
 
 	return strings.Trim(slug, "-")

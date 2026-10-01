@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"api/app/constants"
+	"api/app/helpers"
 	"api/config"
-	"api/utils"
 
 	"gorm.io/gorm"
 )
@@ -28,10 +28,10 @@ func (Organization) IsSlugAvailable(ctx context.Context, slug string) bool {
 }
 
 func (Organization) UniqueSlug(ctx context.Context, name string) (string, error) {
-	base := utils.Slugify(name)
+	base := helpers.Slugify(name)
 
 	for {
-		suffix, err := utils.RandomAlphanumeric(5)
+		suffix, err := helpers.RandomAlphanumeric(5)
 		if err != nil {
 			return "", err
 		}

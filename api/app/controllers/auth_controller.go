@@ -3,11 +3,10 @@ package controllers
 import (
 	"net/http"
 
+	"api/app/helpers"
 	"api/app/models"
 	"api/app/requests"
 	"api/app/resources"
-	"api/config"
-	"api/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +21,7 @@ func (AuthController) Login(ctx *gin.Context) {
 	}
 
 	user, err := (models.User{}).FindByEmail(ctx, loginRequest.Email)
-	if err != nil || !config.CheckPasswordHash(loginRequest.Password, user.Password) {
+	if err != nil || !helpers.CheckPasswordHash(loginRequest.Password, user.Password) {
 		response(ctx).error(
 			"The provided credentials doesn't match our system",
 			gin.H{},
@@ -31,7 +30,7 @@ func (AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateToken()
+	token, err := helpers.GenerateToken()
 	if err != nil {
 		response(ctx).error("Failed to login", gin.H{}, http.StatusInternalServerError)
 		return
@@ -68,7 +67,7 @@ func (AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := config.HashPassword(registerRequest.Password)
+	hashedPassword, err := helpers.HashPassword(registerRequest.Password)
 	if err != nil {
 		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
 		return

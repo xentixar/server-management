@@ -1,4 +1,4 @@
-// Package models contains all models
+// Package models defines domain entities and their database access helpers.
 package models
 
 import (

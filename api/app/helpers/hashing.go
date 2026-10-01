@@ -1,8 +1,7 @@
-package config
+// Package helpers provides small shared utilities such as hashing, tokens, and slugs.
+package helpers
 
-import (
-	"golang.org/x/crypto/bcrypt"
-)
+import "golang.org/x/crypto/bcrypt"
 
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
