@@ -5,7 +5,6 @@ import (
 	"api/app/models"
 )
 
-// MemberPolicy — membership/invite abilities + owner-protection rules.
 type MemberPolicy struct{}
 
 func (MemberPolicy) View(m models.OrganizationMember) bool {

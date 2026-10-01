@@ -5,7 +5,6 @@ import (
 	"api/app/models"
 )
 
-// OrganizationPolicy — add methods as new org abilities appear.
 type OrganizationPolicy struct{}
 
 func (OrganizationPolicy) Create(_ models.User) bool {
