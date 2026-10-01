@@ -57,7 +57,7 @@ func (OrganizationMember) FindByEmail(
 ) (*OrganizationMember, error) {
 	member, err := gorm.G[OrganizationMember](config.GetDatabase()).
 		Joins(clause.Has("User"), func(db gorm.JoinBuilder, joinTable clause.Table, curTable clause.Table) error {
-			db.Where("?.email = ?", clause.Column{Table: joinTable.Name, Name: "email"}, email)
+			db.Where("?.email = ?", joinTable, email)
 			return nil
 		}).
 		Where("organization_id = ?", organizationID).
