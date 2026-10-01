@@ -10,13 +10,13 @@ import (
 var router *gin.Engine
 
 func InitializeRouting() {
-	if config.ENV("APP_ENV") == "production" {
+	if config.MustGet("APP_ENV") == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	router = gin.New()
 	router.Use(gin.Recovery())
-	router.Use(middleware.Logger())
+	router.Use(middleware.RequestLogger())
 }
 
 func GetRouter() *gin.Engine {

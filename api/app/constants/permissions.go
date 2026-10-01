@@ -13,7 +13,7 @@ const (
 	PermissionOrganizationDelete = "organization.delete"
 )
 
-var PERMISSIONS = []Permission{
+var Permissions = []Permission{
 	{Key: PermissionOrganizationCreate, Label: "Create Organization"},
 	{Key: PermissionOrganizationList, Label: "List Organizations"},
 	{Key: PermissionOrganizationShow, Label: "View Organization"},

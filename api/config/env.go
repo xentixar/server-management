@@ -34,7 +34,7 @@ func LoadEnv() {
 	env.DBDatabase = ensureKeyExists("DB_DATABASE")
 }
 
-func ENV(key string) string {
+func MustGet(key string) string {
 	switch key {
 	case "APP_PORT":
 		return env.AppPort

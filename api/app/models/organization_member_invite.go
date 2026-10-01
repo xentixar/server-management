@@ -29,16 +29,16 @@ func (OrganizationMemberInvite) Create(
 		return errors.New("invalid role")
 	}
 
-	member := OrganizationMemberInvite{
+	invite := OrganizationMemberInvite{
 		Email:          email,
 		OrganizationID: organizationID,
 		Role:           role.Name,
 	}
 
-	return gorm.G[OrganizationMemberInvite](config.GetDatabase()).Create(ctx, &member)
+	return gorm.G[OrganizationMemberInvite](config.GetDatabase()).Create(ctx, &invite)
 }
 
-func (OrganizationMemberInvite) FindOneByEmail(
+func (OrganizationMemberInvite) FindByEmail(
 	ctx context.Context,
 	organizationID uint,
 	email string,

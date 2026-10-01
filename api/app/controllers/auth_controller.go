@@ -14,15 +14,15 @@ import (
 type AuthController struct{}
 
 func (AuthController) Login(ctx *gin.Context) {
-	var loginRequest requests.LoginRequest
+	var req requests.LoginRequest
 
-	if !validate(ctx, &loginRequest) {
+	if !bindJSON(ctx, &req) {
 		return
 	}
 
-	user, err := (models.User{}).FindByEmail(ctx, loginRequest.Email)
-	if err != nil || !helpers.CheckPasswordHash(loginRequest.Password, user.Password) {
-		response(ctx).error(
+	user, err := (models.User{}).FindByEmail(ctx, req.Email)
+	if err != nil || !helpers.CheckPassword(req.Password, user.Password) {
+		respond(ctx).fail(
 			"The provided credentials doesn't match our system",
 			gin.H{},
 			http.StatusUnauthorized,
@@ -32,7 +32,7 @@ func (AuthController) Login(ctx *gin.Context) {
 
 	token, err := helpers.GenerateToken()
 	if err != nil {
-		response(ctx).error("Failed to login", gin.H{}, http.StatusInternalServerError)
+		respond(ctx).fail("Failed to login", gin.H{}, http.StatusInternalServerError)
 		return
 	}
 
@@ -40,24 +40,24 @@ func (AuthController) Login(ctx *gin.Context) {
 		UserID: int(user.ID),
 		Token:  token,
 	}).Create(ctx); err != nil {
-		response(ctx).error("Failed to login", gin.H{}, http.StatusInternalServerError)
+		respond(ctx).fail("Failed to login", gin.H{}, http.StatusInternalServerError)
 		return
 	}
 
-	response(ctx).success("Login successful!", gin.H{
+	respond(ctx).ok("Login successful!", gin.H{
 		"access_token": token,
 	}, 200)
 }
 
 func (AuthController) Register(ctx *gin.Context) {
-	var registerRequest requests.RegisterRequest
+	var req requests.RegisterRequest
 
-	if !validate(ctx, &registerRequest) {
+	if !bindJSON(ctx, &req) {
 		return
 	}
 
-	if (models.User{}).IsEmailTaken(ctx, registerRequest.Email) {
-		response(ctx).error(
+	if (models.User{}).IsEmailTaken(ctx, req.Email) {
+		respond(ctx).fail(
 			"User already exists with the given email",
 			gin.H{
 				"email": "The email has already been taken",
@@ -67,26 +67,26 @@ func (AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := helpers.HashPassword(registerRequest.Password)
+	hashedPassword, err := helpers.HashPassword(req.Password)
 	if err != nil {
-		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
+		respond(ctx).fail("Failed to register user", gin.H{}, http.StatusInternalServerError)
 		return
 	}
 
 	user := models.User{
-		Name:     registerRequest.Name,
-		Email:    registerRequest.Email,
+		Name:     req.Name,
+		Email:    req.Email,
 		Password: hashedPassword,
 	}
 
 	if err := user.Create(ctx); err != nil {
-		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
+		respond(ctx).fail("Failed to register user", gin.H{}, http.StatusInternalServerError)
 		return
 	}
 
-	slug, err := (models.Organization{}).UniqueSlug(ctx, user.Name)
+	slug, err := (models.Organization{}).GenerateUniqueSlug(ctx, user.Name)
 	if err != nil {
-		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
+		respond(ctx).fail("Failed to register user", gin.H{}, http.StatusInternalServerError)
 		return
 	}
 
@@ -95,17 +95,17 @@ func (AuthController) Register(ctx *gin.Context) {
 		Slug:   slug,
 		UserID: user.ID,
 	}).Create(ctx); err != nil {
-		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
+		respond(ctx).fail("Failed to register user", gin.H{}, http.StatusInternalServerError)
 		return
 	}
 
-	response(ctx).success("User registration successful", gin.H{}, 201)
+	respond(ctx).ok("User registration successful", gin.H{}, 201)
 }
 
-func (AuthController) GetUser(ctx *gin.Context) {
-	response(ctx).success(
+func (AuthController) Me(ctx *gin.Context) {
+	respond(ctx).ok(
 		"User fetched successfully!",
-		resources.UserResource(currentUser(ctx)),
+		resources.User(currentUser(ctx)),
 		http.StatusOK,
 	)
 }

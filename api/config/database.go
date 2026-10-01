@@ -11,11 +11,11 @@ var (
 )
 
 func InitializeDatabase() {
-	dsn := "host=" + ENV("DB_HOST") +
-		" user=" + ENV("DB_USERNAME") +
-		" password=" + ENV("DB_PASSWORD") +
-		" dbname=" + ENV("DB_DATABASE") +
-		" port=" + ENV("DB_PORT") +
+	dsn := "host=" + MustGet("DB_HOST") +
+		" user=" + MustGet("DB_USERNAME") +
+		" password=" + MustGet("DB_PASSWORD") +
+		" dbname=" + MustGet("DB_DATABASE") +
+		" port=" + MustGet("DB_PORT") +
 		" sslmode=disable"
 
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})

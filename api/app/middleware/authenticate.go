@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Authenticate() gin.HandlerFunc {
+func RequireAuth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authorizationHeader := ctx.GetHeader("Authorization")
 		if authorizationHeader == "" {

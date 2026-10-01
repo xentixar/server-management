@@ -12,140 +12,137 @@ import (
 
 type OrganizationController struct{}
 
-func (OrganizationController) Index(ctx *gin.Context) {
+func (OrganizationController) List(ctx *gin.Context) {
 	user := currentUser(ctx)
 
-	organizations, err := (models.Organization{}).FindByUserID(ctx, user.ID)
+	organizations, err := (models.Organization{}).FindOwnedByUser(ctx, user.ID)
 	if err != nil {
-		response(ctx).error("Failed to fetch organizations", gin.H{}, 500)
+		respond(ctx).fail("Failed to fetch organizations", gin.H{}, 500)
 		return
 	}
 
-	organizationsResponse := make([]map[string]any, 0, len(organizations))
+	payload := make([]map[string]any, 0, len(organizations))
 	for _, organization := range organizations {
-		organizationsResponse = append(
-			organizationsResponse,
-			resources.OrganizationResource(organization),
-		)
+		payload = append(payload, resources.Organization(organization))
 	}
 
-	response(ctx).success("Organization fetched successfully!", organizationsResponse, 200)
+	respond(ctx).ok("Organization fetched successfully!", payload, 200)
 }
 
-func (OrganizationController) Store(ctx *gin.Context) {
-	var storeOrganizationRequest requests.StoreOrganizationRequest
+func (OrganizationController) Create(ctx *gin.Context) {
+	var req requests.OrganizationRequest
 
-	if !validate(ctx, &storeOrganizationRequest) {
+	if !bindJSON(ctx, &req) {
 		return
 	}
 
 	user := currentUser(ctx)
 
-	slug, err := (models.Organization{}).UniqueSlug(ctx, storeOrganizationRequest.Name)
+	slug, err := (models.Organization{}).GenerateUniqueSlug(ctx, req.Name)
 	if err != nil {
-		response(ctx).error("Failed to generate organization slug", gin.H{}, 500)
+		respond(ctx).fail("Failed to generate organization slug", gin.H{}, 500)
 		return
 	}
 
 	organization := models.Organization{
-		Name:   storeOrganizationRequest.Name,
+		Name:   req.Name,
 		Slug:   slug,
 		UserID: user.ID,
 	}
 
 	if err := organization.Create(ctx); err != nil {
-		response(ctx).error("Failed to create organization", gin.H{}, 500)
+		respond(ctx).fail("Failed to create organization", gin.H{}, 500)
 		return
 	}
 
-	response(ctx).success(
+	respond(ctx).ok(
 		"Organization created successfully!",
-		resources.OrganizationResource(organization),
+		resources.Organization(organization),
 		201,
 	)
 }
 
-func (OrganizationController) Show(ctx *gin.Context) {
+func (OrganizationController) Get(ctx *gin.Context) {
 	organizationID, err := strconv.Atoi(ctx.Param("organization"))
 	if err != nil {
-		response(ctx).error("Invalid organization ID", gin.H{}, 400)
+		respond(ctx).fail("Invalid organization ID", gin.H{}, 400)
 		return
 	}
 
 	user := currentUser(ctx)
 
-	organization, err := (models.Organization{}).FindByID(ctx, uint(organizationID), user.ID)
+	organization, err := (models.Organization{}).FindOwnedByID(ctx, uint(organizationID), user.ID)
 	if err != nil {
-		response(ctx).error("Organization not found", gin.H{}, 404)
+		respond(ctx).fail("Organization not found", gin.H{}, 404)
 		return
 	}
 
-	response(ctx).success("Organization fetched successfully!", resources.OrganizationResource(organization), 200)
+	respond(ctx).ok("Organization fetched successfully!", resources.Organization(organization), 200)
 }
 
 func (OrganizationController) Update(ctx *gin.Context) {
 	organizationID, err := strconv.Atoi(ctx.Param("organization"))
 	if err != nil {
-		response(ctx).error("Invalid organization ID", gin.H{}, 400)
+		respond(ctx).fail("Invalid organization ID", gin.H{}, 400)
 		return
 	}
 
 	user := currentUser(ctx)
 
-	organization, err := (models.Organization{}).FindByID(ctx, uint(organizationID), user.ID)
+	organization, err := (models.Organization{}).FindOwnedByID(ctx, uint(organizationID), user.ID)
 	if err != nil {
-		response(ctx).error("Organization not found", gin.H{}, 404)
+		respond(ctx).fail("Organization not found", gin.H{}, 404)
 		return
 	}
 
-	var storeOrganizationRequest requests.StoreOrganizationRequest
+	var req requests.OrganizationRequest
 
-	if !validate(ctx, &storeOrganizationRequest) {
+	if !bindJSON(ctx, &req) {
 		return
 	}
 
-	if organization.Name != storeOrganizationRequest.Name {
-		slug, err := (models.Organization{}).UniqueSlug(ctx, storeOrganizationRequest.Name)
+	if organization.Name != req.Name {
+		slug, err := (models.Organization{}).GenerateUniqueSlug(ctx, req.Name)
 		if err != nil {
-			response(ctx).error("Failed to generate organization slug", gin.H{}, 500)
+			respond(ctx).fail("Failed to generate organization slug", gin.H{}, 500)
 			return
 		}
 		organization.Slug = slug
 	}
 
-	organization.Name = storeOrganizationRequest.Name
+	organization.Name = req.Name
 
 	if err := organization.Update(ctx); err != nil {
-		response(ctx).error("Failed to update organization", gin.H{}, 500)
+		respond(ctx).fail("Failed to update organization", gin.H{}, 500)
 		return
 	}
 
-	response(ctx).success(
+	respond(ctx).ok(
 		"Organization updated successfully!",
-		resources.OrganizationResource(organization),
+		resources.Organization(organization),
 		200,
 	)
 }
 
-func (OrganizationController) Destroy(ctx *gin.Context) {
+func (OrganizationController) Delete(ctx *gin.Context) {
 	organizationID, err := strconv.Atoi(ctx.Param("organization"))
 	if err != nil {
-		response(ctx).error("Invalid organization ID", gin.H{}, 400)
+		respond(ctx).fail("Invalid organization ID", gin.H{}, 400)
 		return
 	}
 
 	user := currentUser(ctx)
 
-	organization, err := (models.Organization{}).FindByID(ctx, uint(organizationID), user.ID)
+	organization, err := (models.Organization{}).FindOwnedByID(ctx, uint(organizationID), user.ID)
 	if err != nil {
-		response(ctx).error("Organization not found", gin.H{}, 404)
+		respond(ctx).fail("Organization not found", gin.H{}, 404)
 		return
 	}
 
 	if err := organization.Delete(ctx); err != nil {
-		response(ctx).error("Failed to delete organization", gin.H{}, 500)
+		respond(ctx).fail("Failed to delete organization", gin.H{}, 500)
 		return
 	}
 
-	response(ctx).success("Organization deleted successfully!", gin.H{}, 200)
+	respond(ctx).ok("Organization deleted successfully!", gin.H{}, 200)
 }

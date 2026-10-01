@@ -22,12 +22,12 @@ type Organization struct {
 	MemberInvites []OrganizationMemberInvite `gorm:"foreignKey:OrganizationID"`
 }
 
-func (Organization) IsSlugAvailable(ctx context.Context, slug string) bool {
+func (Organization) SlugAvailable(ctx context.Context, slug string) bool {
 	_, err := gorm.G[Organization](config.GetDatabase()).Where("slug = ?", slug).First(ctx)
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
-func (Organization) UniqueSlug(ctx context.Context, name string) (string, error) {
+func (Organization) GenerateUniqueSlug(ctx context.Context, name string) (string, error) {
 	base := helpers.Slugify(name)
 
 	for {
@@ -37,16 +37,16 @@ func (Organization) UniqueSlug(ctx context.Context, name string) (string, error)
 		}
 
 		slug := base + "-" + suffix
-		if (Organization{}).IsSlugAvailable(ctx, slug) {
+		if (Organization{}).SlugAvailable(ctx, slug) {
 			return slug, nil
 		}
 	}
 }
 
-func (Organization) FindByID(ctx context.Context, id uint, userID uint, withRelations ...string) (Organization, error) {
+func (Organization) FindOwnedByID(ctx context.Context, id uint, ownerID uint, withRelations ...string) (Organization, error) {
 	query := gorm.
 		G[Organization](config.GetDatabase()).
-		Where("id = ? AND user_id = ?", id, userID)
+		Where("id = ? AND user_id = ?", id, ownerID)
 
 	for _, relation := range withRelations {
 		query = query.Preload(relation, nil)
@@ -55,10 +55,10 @@ func (Organization) FindByID(ctx context.Context, id uint, userID uint, withRela
 	return query.First(ctx)
 }
 
-func (Organization) FindByUserID(ctx context.Context, userID uint) ([]Organization, error) {
+func (Organization) FindOwnedByUser(ctx context.Context, ownerID uint) ([]Organization, error) {
 	return gorm.
 		G[Organization](config.GetDatabase()).
-		Where("user_id = ?", userID).
+		Where("user_id = ?", ownerID).
 		Find(ctx)
 }
 
@@ -69,7 +69,7 @@ func (o *Organization) Create(ctx context.Context) error {
 		return err
 	}
 
-	return OrganizationMember{}.Assign(ctx, o.ID, o.UserID, constants.ROLES[constants.OwnerRole])
+	return OrganizationMember{}.Upsert(ctx, o.ID, o.UserID, constants.Roles[constants.OwnerRole])
 }
 
 func (o *Organization) Update(ctx context.Context) error {

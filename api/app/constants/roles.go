@@ -12,22 +12,22 @@ const (
 	ViewerRole = "viewer"
 )
 
-var ROLES = map[string]Role{
+var Roles = map[string]Role{
 	OwnerRole: {
-		Name:        "owner",
-		Permissions: PERMISSIONS,
+		Name:        OwnerRole,
+		Permissions: Permissions,
 	},
 	AdminRole: {
-		Name:        "admin",
-		Permissions: PERMISSIONS,
+		Name:        AdminRole,
+		Permissions: Permissions,
 	},
 	ViewerRole: {
-		Name:        "viewer",
-		Permissions: PERMISSIONS,
+		Name:        ViewerRole,
+		Permissions: Permissions,
 	},
 }
 
 func IsValidRole(role string) bool {
-	_, exists := ROLES[role]
+	_, exists := Roles[role]
 	return exists
 }

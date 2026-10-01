@@ -35,7 +35,7 @@ func Initialize() {
 
 func Run() {
 	server := &http.Server{
-		Addr:              ":" + config.ENV("APP_PORT"),
+		Addr:              ":" + config.MustGet("APP_PORT"),
 		Handler:           GetRouter(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,

@@ -2,7 +2,7 @@ package resources
 
 import "api/app/models"
 
-func OrganizationMemberResource(data models.OrganizationMember) map[string]any {
+func Member(data models.OrganizationMember) map[string]any {
 	return map[string]any{
 		"id":    data.ID,
 		"name":  data.User.Name,

@@ -22,7 +22,7 @@ type OrganizationMember struct {
 	Organization Organization `gorm:"foreignKey:OrganizationID"`
 }
 
-func (OrganizationMember) Assign(
+func (OrganizationMember) Upsert(
 	ctx context.Context,
 	organizationID uint,
 	userID uint,
@@ -50,7 +50,7 @@ func (OrganizationMember) Assign(
 	}).Create(ctx, &member)
 }
 
-func (OrganizationMember) FindOneByEmail(
+func (OrganizationMember) FindByEmail(
 	ctx context.Context,
 	organizationID uint,
 	email string,

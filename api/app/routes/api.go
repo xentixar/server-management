@@ -9,30 +9,30 @@ import (
 )
 
 func Register(router *gin.RouterGroup) {
-	healthController := controllers.HealthController{}
-	authController := controllers.AuthController{}
-	organizationController := controllers.OrganizationController{}
-	organizationMemberController := controllers.OrganizationMemberController{}
-	organizationMemberInviteController := controllers.OrganizationMemberInviteController{}
+	health := controllers.HealthController{}
+	auth := controllers.AuthController{}
+	organizations := controllers.OrganizationController{}
+	members := controllers.OrganizationMemberController{}
+	invites := controllers.OrganizationMemberInviteController{}
 
-	router.GET("/health", healthController.GetHealth)
+	router.GET("/health", health.Check)
 
 	group := router.Group("/auth")
 	{
-		group.POST("/login", authController.Login)
-		group.POST("/register", authController.Register)
-		group.GET("/user", middleware.Authenticate(), authController.GetUser)
+		group.POST("/login", auth.Login)
+		group.POST("/register", auth.Register)
+		group.GET("/user", middleware.RequireAuth(), auth.Me)
 	}
 
-	group = router.Group("/organizations", middleware.Authenticate())
+	group = router.Group("/organizations", middleware.RequireAuth())
 	{
-		group.GET("", organizationController.Index)
-		group.POST("", organizationController.Store)
-		group.GET("/:organization", organizationController.Show)
-		group.PATCH("/:organization", organizationController.Update)
-		group.DELETE("/:organization", organizationController.Destroy)
+		group.GET("", organizations.List)
+		group.POST("", organizations.Create)
+		group.GET("/:organization", organizations.Get)
+		group.PATCH("/:organization", organizations.Update)
+		group.DELETE("/:organization", organizations.Delete)
 
-		group.GET("/:organization/members", organizationMemberController.Index)
-		group.POST("/:organization/members/invite", organizationMemberInviteController.Invite)
+		group.GET("/:organization/members", members.List)
+		group.POST("/:organization/members/invite", invites.Create)
 	}
 }

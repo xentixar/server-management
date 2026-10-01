@@ -10,42 +10,37 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Response struct {
-	context *gin.Context
+type apiResponse struct {
+	ctx *gin.Context
 }
 
-func response(context *gin.Context) Response {
-	return Response{
-		context: context,
-	}
+func respond(ctx *gin.Context) apiResponse {
+	return apiResponse{ctx: ctx}
 }
 
-func (r Response) success(message string, data any, code int) {
-	r.context.JSON(code, map[string]any{
+func (r apiResponse) ok(message string, data any, code int) {
+	r.ctx.JSON(code, map[string]any{
 		"message": message,
 		"data":    data,
 		"success": true,
 	})
 }
 
-func (r Response) error(message string, errors any, code int) {
-	r.context.JSON(code, map[string]any{
+func (r apiResponse) fail(message string, data any, code int) {
+	r.ctx.JSON(code, map[string]any{
 		"message": message,
-		"data":    errors,
+		"data":    data,
 		"success": false,
 	})
 }
 
-func validate(context *gin.Context, request any) bool {
-	if err := context.ShouldBindJSON(request); err != nil {
-		fieldErrors := validators.FormatValidationErrors(err, request)
-
-		response(context).error(
+func bindJSON(ctx *gin.Context, request any) bool {
+	if err := ctx.ShouldBindJSON(request); err != nil {
+		respond(ctx).fail(
 			"Validation error",
-			fieldErrors,
+			validators.FormatValidationErrors(err, request),
 			http.StatusBadRequest,
 		)
-
 		return false
 	}
 

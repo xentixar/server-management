@@ -8,6 +8,6 @@ import (
 
 type HealthController struct{}
 
-func (HealthController) GetHealth(context *gin.Context) {
-	response(context).success("Healthy", gin.H{}, http.StatusOK)
+func (HealthController) Check(ctx *gin.Context) {
+	respond(ctx).ok("Healthy", gin.H{}, http.StatusOK)
 }

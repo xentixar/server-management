@@ -8,6 +8,6 @@ import (
 
 func Register() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		_ = v.RegisterValidation("role", RoleValidator)
+		_ = v.RegisterValidation("role", ValidateRole)
 	}
 }
