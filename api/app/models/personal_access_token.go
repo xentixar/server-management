@@ -18,14 +18,14 @@ type PersonalAccessToken struct {
 	User User
 }
 
-func (PersonalAccessToken) FindByToken(token string) (PersonalAccessToken, error) {
+func (PersonalAccessToken) FindByToken(ctx context.Context, token string) (PersonalAccessToken, error) {
 	return gorm.
 		G[PersonalAccessToken](config.GetDatabase()).
 		Preload("User", nil).
 		Where("token = ?", token).
-		First(context.Background())
+		First(ctx)
 }
 
-func (t *PersonalAccessToken) Create() error {
-	return gorm.G[PersonalAccessToken](config.GetDatabase()).Create(context.Background(), t)
+func (t *PersonalAccessToken) Create(ctx context.Context) error {
+	return gorm.G[PersonalAccessToken](config.GetDatabase()).Create(ctx, t)
 }

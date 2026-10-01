@@ -24,7 +24,7 @@ func Authenticate() gin.HandlerFunc {
 			return
 		}
 
-		personalAccessToken, err := (models.PersonalAccessToken{}).FindByToken(parts[1])
+		personalAccessToken, err := (models.PersonalAccessToken{}).FindByToken(ctx, parts[1])
 		if err != nil {
 			abortUnauthorized(ctx, "Invalid access token")
 			return

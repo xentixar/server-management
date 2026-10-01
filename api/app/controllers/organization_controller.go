@@ -15,7 +15,7 @@ type OrganizationController struct{}
 func (OrganizationController) Index(ctx *gin.Context) {
 	user := currentUser(ctx)
 
-	organizations, err := (models.Organization{}).FindByUserID(user.ID)
+	organizations, err := (models.Organization{}).FindByUserID(ctx, user.ID)
 	if err != nil {
 		response(ctx).error("Failed to fetch organizations", gin.H{}, 500)
 		return
@@ -41,7 +41,7 @@ func (OrganizationController) Store(ctx *gin.Context) {
 
 	user := currentUser(ctx)
 
-	slug, err := (models.Organization{}).UniqueSlug(storeOrganizationRequest.Name)
+	slug, err := (models.Organization{}).UniqueSlug(ctx, storeOrganizationRequest.Name)
 	if err != nil {
 		response(ctx).error("Failed to generate organization slug", gin.H{}, 500)
 		return
@@ -53,7 +53,7 @@ func (OrganizationController) Store(ctx *gin.Context) {
 		UserID: user.ID,
 	}
 
-	if err := organization.Create(); err != nil {
+	if err := organization.Create(ctx); err != nil {
 		response(ctx).error("Failed to create organization", gin.H{}, 500)
 		return
 	}
@@ -74,7 +74,7 @@ func (OrganizationController) Show(ctx *gin.Context) {
 
 	user := currentUser(ctx)
 
-	organization, err := (models.Organization{}).FindByID(uint(organizationID), user.ID)
+	organization, err := (models.Organization{}).FindByID(ctx, uint(organizationID), user.ID)
 	if err != nil {
 		response(ctx).error("Organization not found", gin.H{}, 404)
 		return
@@ -92,7 +92,7 @@ func (OrganizationController) Update(ctx *gin.Context) {
 
 	user := currentUser(ctx)
 
-	organization, err := (models.Organization{}).FindByID(uint(organizationID), user.ID)
+	organization, err := (models.Organization{}).FindByID(ctx, uint(organizationID), user.ID)
 	if err != nil {
 		response(ctx).error("Organization not found", gin.H{}, 404)
 		return
@@ -104,16 +104,18 @@ func (OrganizationController) Update(ctx *gin.Context) {
 		return
 	}
 
-	slug, err := (models.Organization{}).UniqueSlug(storeOrganizationRequest.Name)
-	if err != nil {
-		response(ctx).error("Failed to generate organization slug", gin.H{}, 500)
-		return
+	if organization.Name != storeOrganizationRequest.Name {
+		slug, err := (models.Organization{}).UniqueSlug(ctx, storeOrganizationRequest.Name)
+		if err != nil {
+			response(ctx).error("Failed to generate organization slug", gin.H{}, 500)
+			return
+		}
+		organization.Slug = slug
 	}
 
 	organization.Name = storeOrganizationRequest.Name
-	organization.Slug = slug
 
-	if err := organization.Update(); err != nil {
+	if err := organization.Update(ctx); err != nil {
 		response(ctx).error("Failed to update organization", gin.H{}, 500)
 		return
 	}
@@ -134,13 +136,13 @@ func (OrganizationController) Destroy(ctx *gin.Context) {
 
 	user := currentUser(ctx)
 
-	organization, err := (models.Organization{}).FindByID(uint(organizationID), user.ID)
+	organization, err := (models.Organization{}).FindByID(ctx, uint(organizationID), user.ID)
 	if err != nil {
 		response(ctx).error("Organization not found", gin.H{}, 404)
 		return
 	}
 
-	if err := organization.Delete(); err != nil {
+	if err := organization.Delete(ctx); err != nil {
 		response(ctx).error("Failed to delete organization", gin.H{}, 500)
 		return
 	}

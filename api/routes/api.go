@@ -13,6 +13,7 @@ func Register(router *gin.RouterGroup) {
 	authController := controllers.AuthController{}
 	organizationController := controllers.OrganizationController{}
 	organizationMemberController := controllers.OrganizationMemberController{}
+	organizationMemberInviteController := controllers.OrganizationMemberInviteController{}
 
 	router.GET("/health", healthController.GetHealth)
 
@@ -32,5 +33,6 @@ func Register(router *gin.RouterGroup) {
 		group.DELETE("/:organization", organizationController.Destroy)
 
 		group.GET("/:organization/members", organizationMemberController.Index)
+		group.POST("/:organization/members/invite", organizationMemberInviteController.Invite)
 	}
 }

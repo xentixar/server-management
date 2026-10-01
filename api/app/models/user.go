@@ -19,15 +19,15 @@ type User struct {
 	Memberships   []OrganizationMember `gorm:"foreignKey:UserID"`
 }
 
-func (User) FindByEmail(email string) (User, error) {
-	return gorm.G[User](config.GetDatabase()).Where("email = ?", email).First(context.Background())
+func (User) FindByEmail(ctx context.Context, email string) (User, error) {
+	return gorm.G[User](config.GetDatabase()).Where("email = ?", email).First(ctx)
 }
 
-func (User) IsEmailTaken(email string) bool {
-	_, err := (User{}).FindByEmail(email)
+func (User) IsEmailTaken(ctx context.Context, email string) bool {
+	_, err := (User{}).FindByEmail(ctx, email)
 	return err == nil
 }
 
-func (u *User) Create() error {
-	return gorm.G[User](config.GetDatabase()).Create(context.Background(), u)
+func (u *User) Create(ctx context.Context) error {
+	return gorm.G[User](config.GetDatabase()).Create(ctx, u)
 }

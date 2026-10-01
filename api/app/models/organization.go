@@ -17,16 +17,17 @@ type Organization struct {
 	Slug   string `gorm:"uniqueIndex"`
 	UserID uint
 
-	User    User                 `gorm:"foreignKey:UserID"`
-	Members []OrganizationMember `gorm:"foreignKey:OrganizationID"`
+	User          User                       `gorm:"foreignKey:UserID"`
+	Members       []OrganizationMember       `gorm:"foreignKey:OrganizationID"`
+	MemberInvites []OrganizationMemberInvite `gorm:"foreignKey:OrganizationID"`
 }
 
-func (Organization) IsSlugAvailable(slug string) bool {
-	_, err := gorm.G[Organization](config.GetDatabase()).Where("slug = ?", slug).First(context.Background())
+func (Organization) IsSlugAvailable(ctx context.Context, slug string) bool {
+	_, err := gorm.G[Organization](config.GetDatabase()).Where("slug = ?", slug).First(ctx)
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
-func (Organization) UniqueSlug(name string) (string, error) {
+func (Organization) UniqueSlug(ctx context.Context, name string) (string, error) {
 	base := utils.Slugify(name)
 
 	for {
@@ -36,13 +37,13 @@ func (Organization) UniqueSlug(name string) (string, error) {
 		}
 
 		slug := base + "-" + suffix
-		if (Organization{}).IsSlugAvailable(slug) {
+		if (Organization{}).IsSlugAvailable(ctx, slug) {
 			return slug, nil
 		}
 	}
 }
 
-func (Organization) FindByID(id uint, userID uint, withRelations ...string) (Organization, error) {
+func (Organization) FindByID(ctx context.Context, id uint, userID uint, withRelations ...string) (Organization, error) {
 	query := gorm.
 		G[Organization](config.GetDatabase()).
 		Where("id = ? AND user_id = ?", id, userID)
@@ -51,32 +52,32 @@ func (Organization) FindByID(id uint, userID uint, withRelations ...string) (Org
 		query = query.Preload(relation, nil)
 	}
 
-	return query.First(context.Background())
+	return query.First(ctx)
 }
 
-func (Organization) FindByUserID(userID uint) ([]Organization, error) {
+func (Organization) FindByUserID(ctx context.Context, userID uint) ([]Organization, error) {
 	return gorm.
 		G[Organization](config.GetDatabase()).
 		Where("user_id = ?", userID).
-		Find(context.Background())
+		Find(ctx)
 }
 
-func (o *Organization) Create() error {
+func (o *Organization) Create(ctx context.Context) error {
 	result := gorm.WithResult()
-	err := gorm.G[Organization](config.GetDatabase(), result).Create(context.Background(), o)
+	err := gorm.G[Organization](config.GetDatabase(), result).Create(ctx, o)
 	if err != nil {
 		return err
 	}
 
-	return OrganizationMember{}.Assign(o.ID, o.UserID, constants.ROLES[constants.OwnerRole])
+	return OrganizationMember{}.Assign(ctx, o.ID, o.UserID, constants.ROLES[constants.OwnerRole])
 }
 
-func (o *Organization) Update() error {
-	_, err := gorm.G[Organization](config.GetDatabase()).Where("id = ?", o.ID).Updates(context.Background(), *o)
+func (o *Organization) Update(ctx context.Context) error {
+	_, err := gorm.G[Organization](config.GetDatabase()).Where("id = ?", o.ID).Updates(ctx, *o)
 	return err
 }
 
-func (o *Organization) Delete() error {
-	_, err := gorm.G[Organization](config.GetDatabase()).Where("id = ?", o.ID).Delete(context.Background())
+func (o *Organization) Delete(ctx context.Context) error {
+	_, err := gorm.G[Organization](config.GetDatabase()).Where("id = ?", o.ID).Delete(ctx)
 	return err
 }

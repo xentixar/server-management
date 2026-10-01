@@ -26,12 +26,7 @@ var ROLES = map[string]Role{
 	},
 }
 
-func IsValidRole(role Role) bool {
-	for _, r := range ROLES {
-		if r.Name == role.Name {
-			return true
-		}
-	}
-
-	return false
+func IsValidRole(role string) bool {
+	_, exists := ROLES[role]
+	return exists
 }

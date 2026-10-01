@@ -20,7 +20,7 @@ func (OrganizationMemberController) Index(ctx *gin.Context) {
 
 	user := currentUser(ctx)
 
-	organization, err := (models.Organization{}).FindByID(uint(organizationID), user.ID, "Members", "Members.User")
+	organization, err := (models.Organization{}).FindByID(ctx, uint(organizationID), user.ID, "Members", "Members.User")
 	if err != nil {
 		response(ctx).error("Organization not found", gin.H{}, 404)
 		return

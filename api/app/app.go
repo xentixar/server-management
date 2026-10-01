@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"api/app/models"
+	"api/app/validators"
 	"api/config"
 	"api/routes"
 )
@@ -16,6 +17,7 @@ func Initialize() {
 	config.LoadEnv()
 	config.InitializeRouting()
 	config.InitializeDatabase()
+	validators.Register()
 
 	group := config.GetRouter().Group("/api/v1")
 	{
@@ -27,6 +29,7 @@ func Initialize() {
 		&models.PersonalAccessToken{},
 		&models.Organization{},
 		&models.OrganizationMember{},
+		&models.OrganizationMemberInvite{},
 	)
 }
 

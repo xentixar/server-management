@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"errors"
 
 	"api/app/constants"
@@ -22,11 +23,12 @@ type OrganizationMember struct {
 }
 
 func (OrganizationMember) Assign(
+	ctx context.Context,
 	organizationID uint,
 	userID uint,
 	role constants.Role,
 ) error {
-	if !constants.IsValidRole(role) {
+	if !constants.IsValidRole(role.Name) {
 		return errors.New("invalid role")
 	}
 
@@ -37,6 +39,7 @@ func (OrganizationMember) Assign(
 	}
 
 	return config.GetDatabase().
+		WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns: []clause.Column{
 				{Name: "organization_id"},
@@ -48,4 +51,31 @@ func (OrganizationMember) Assign(
 			}),
 		}).
 		Create(&member).Error
+}
+
+func (OrganizationMember) FindOneByEmail(
+	ctx context.Context,
+	organizationID uint,
+	email string,
+) (*OrganizationMember, error) {
+	user, err := (User{}).FindByEmail(ctx, email)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	member, err := gorm.G[OrganizationMember](config.GetDatabase()).
+		Where("organization_id = ? AND user_id = ?", organizationID, user.ID).
+		First(ctx)
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &member, nil
 }

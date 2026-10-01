@@ -44,6 +44,8 @@ func msgForTag(tag string, param string) string {
 		return "This field is required"
 	case "email":
 		return "Invalid email address format"
+	case "role":
+		return "This role is invalid"
 	case "min":
 		return fmt.Sprintf("Must be at least %s characters long", param)
 	default:

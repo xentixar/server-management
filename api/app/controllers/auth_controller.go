@@ -21,7 +21,7 @@ func (AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	user, err := (models.User{}).FindByEmail(loginRequest.Email)
+	user, err := (models.User{}).FindByEmail(ctx, loginRequest.Email)
 	if err != nil || !config.CheckPasswordHash(loginRequest.Password, user.Password) {
 		response(ctx).error(
 			"The provided credentials doesn't match our system",
@@ -31,12 +31,19 @@ func (AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	token, _ := utils.GenerateToken()
+	token, err := utils.GenerateToken()
+	if err != nil {
+		response(ctx).error("Failed to login", gin.H{}, http.StatusInternalServerError)
+		return
+	}
 
-	_ = (&models.PersonalAccessToken{
+	if err := (&models.PersonalAccessToken{
 		UserID: int(user.ID),
 		Token:  token,
-	}).Create()
+	}).Create(ctx); err != nil {
+		response(ctx).error("Failed to login", gin.H{}, http.StatusInternalServerError)
+		return
+	}
 
 	response(ctx).success("Login successful!", gin.H{
 		"access_token": token,
@@ -50,7 +57,7 @@ func (AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	if (models.User{}).IsEmailTaken(registerRequest.Email) {
+	if (models.User{}).IsEmailTaken(ctx, registerRequest.Email) {
 		response(ctx).error(
 			"User already exists with the given email",
 			gin.H{
@@ -61,7 +68,11 @@ func (AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	hashedPassword, _ := config.HashPassword(registerRequest.Password)
+	hashedPassword, err := config.HashPassword(registerRequest.Password)
+	if err != nil {
+		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
+		return
+	}
 
 	user := models.User{
 		Name:     registerRequest.Name,
@@ -69,15 +80,25 @@ func (AuthController) Register(ctx *gin.Context) {
 		Password: hashedPassword,
 	}
 
-	_ = user.Create()
+	if err := user.Create(ctx); err != nil {
+		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
+		return
+	}
 
-	slug, _ := (models.Organization{}).UniqueSlug(user.Name)
+	slug, err := (models.Organization{}).UniqueSlug(ctx, user.Name)
+	if err != nil {
+		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
+		return
+	}
 
-	_ = (&models.Organization{
+	if err := (&models.Organization{
 		Name:   user.Name,
 		Slug:   slug,
 		UserID: user.ID,
-	}).Create()
+	}).Create(ctx); err != nil {
+		response(ctx).error("Failed to register user", gin.H{}, http.StatusInternalServerError)
+		return
+	}
 
 	response(ctx).success("User registration successful", gin.H{}, 201)
 }
