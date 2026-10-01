@@ -1,3 +1,4 @@
+// Package validators contains all custom validators
 package validators
 
 import (

@@ -1,3 +1,4 @@
+// Package constants contains all static constant data
 package constants
 
 type Role struct {
