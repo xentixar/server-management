@@ -42,11 +42,16 @@ func (Organization) UniqueSlug(name string) (string, error) {
 	}
 }
 
-func (Organization) FindByID(id uint, userID uint) (Organization, error) {
-	return gorm.
+func (Organization) FindByID(id uint, userID uint, withRelations ...string) (Organization, error) {
+	query := gorm.
 		G[Organization](config.GetDatabase()).
-		Where("id = ? AND user_id = ?", id, userID).
-		First(context.Background())
+		Where("id = ? AND user_id = ?", id, userID)
+
+	for _, relation := range withRelations {
+		query = query.Preload(relation, nil)
+	}
+
+	return query.First(context.Background())
 }
 
 func (Organization) FindByUserID(userID uint) ([]Organization, error) {
