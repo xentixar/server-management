@@ -26,10 +26,5 @@ func (OrganizationMemberController) List(ctx *gin.Context) {
 		return
 	}
 
-	payload := make([]map[string]any, 0, len(organization.Members))
-	for _, member := range organization.Members {
-		payload = append(payload, resources.Member(member))
-	}
-
-	respond(ctx).ok("Organization members fetched successfully!", payload, 200)
+	respond(ctx).ok("Organization members fetched successfully!", resources.OrganizationMemberCollection(organization.Members), 200)
 }

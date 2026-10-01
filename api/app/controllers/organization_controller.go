@@ -21,12 +21,7 @@ func (OrganizationController) List(ctx *gin.Context) {
 		return
 	}
 
-	payload := make([]map[string]any, 0, len(organizations))
-	for _, organization := range organizations {
-		payload = append(payload, resources.Organization(organization))
-	}
-
-	respond(ctx).ok("Organization fetched successfully!", payload, 200)
+	respond(ctx).ok("Organization fetched successfully!", resources.OrganizationCollection(organizations), 200)
 }
 
 func (OrganizationController) Create(ctx *gin.Context) {
@@ -57,7 +52,7 @@ func (OrganizationController) Create(ctx *gin.Context) {
 
 	respond(ctx).ok(
 		"Organization created successfully!",
-		resources.Organization(organization),
+		resources.OrganizationResource(organization),
 		201,
 	)
 }
@@ -77,7 +72,7 @@ func (OrganizationController) Get(ctx *gin.Context) {
 		return
 	}
 
-	respond(ctx).ok("Organization fetched successfully!", resources.Organization(organization), 200)
+	respond(ctx).ok("Organization fetched successfully!", resources.OrganizationResource(organization), 200)
 }
 
 func (OrganizationController) Update(ctx *gin.Context) {
@@ -119,7 +114,7 @@ func (OrganizationController) Update(ctx *gin.Context) {
 
 	respond(ctx).ok(
 		"Organization updated successfully!",
-		resources.Organization(organization),
+		resources.OrganizationResource(organization),
 		200,
 	)
 }

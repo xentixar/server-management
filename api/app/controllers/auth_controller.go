@@ -105,7 +105,7 @@ func (AuthController) Register(ctx *gin.Context) {
 func (AuthController) Me(ctx *gin.Context) {
 	respond(ctx).ok(
 		"User fetched successfully!",
-		resources.User(currentUser(ctx)),
+		resources.UserResource(currentUser(ctx)),
 		http.StatusOK,
 	)
 }
