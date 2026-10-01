@@ -1,27 +1,51 @@
 package controllers
 
 import (
-	"strconv"
-
 	"api/app/constants"
 	"api/app/models"
 	"api/app/requests"
+	"api/app/resources"
 
 	"github.com/gin-gonic/gin"
 )
 
 type OrganizationMemberInviteController struct{}
 
-func (OrganizationMemberInviteController) Create(ctx *gin.Context) {
-	organizationID, err := strconv.Atoi(ctx.Param("organization"))
-	if err != nil {
-		respond(ctx).fail("Invalid organization ID", gin.H{}, 400)
+func (OrganizationMemberInviteController) List(ctx *gin.Context) {
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
 		return
 	}
 
 	user := currentUser(ctx)
 
-	organization, err := (models.Organization{}).FindOwnedByID(ctx, uint(organizationID), user.ID)
+	if _, err := (models.Organization{}).FindOwnedByID(ctx, organizationID, user.ID); err != nil {
+		respond(ctx).fail("Organization not found", gin.H{}, 404)
+		return
+	}
+
+	invites, err := (models.OrganizationMemberInvite{}).FindByOrganization(ctx, organizationID)
+	if err != nil {
+		respond(ctx).fail("Failed to fetch invites", gin.H{}, 500)
+		return
+	}
+
+	respond(ctx).ok(
+		"Organization invites fetched successfully!",
+		resources.OrganizationMemberInviteCollection(invites),
+		200,
+	)
+}
+
+func (OrganizationMemberInviteController) Create(ctx *gin.Context) {
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
+		return
+	}
+
+	user := currentUser(ctx)
+
+	organization, err := (models.Organization{}).FindOwnedByID(ctx, organizationID, user.ID)
 	if err != nil {
 		respond(ctx).fail("Organization not found", gin.H{}, 404)
 		return
@@ -29,6 +53,11 @@ func (OrganizationMemberInviteController) Create(ctx *gin.Context) {
 
 	var req requests.InviteMemberRequest
 	if !bindJSON(ctx, &req) {
+		return
+	}
+
+	if req.Role == constants.OwnerRole {
+		respond(ctx).fail("Cannot invite user as owner", gin.H{}, 422)
 		return
 	}
 
@@ -64,4 +93,78 @@ func (OrganizationMemberInviteController) Create(ctx *gin.Context) {
 	}
 
 	respond(ctx).ok("User invited successfully!", gin.H{}, 201)
+}
+
+func (OrganizationMemberInviteController) Accept(ctx *gin.Context) {
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
+		return
+	}
+
+	user := currentUser(ctx)
+
+	if _, err := (models.Organization{}).FindByID(ctx, organizationID); err != nil {
+		respond(ctx).fail("Organization not found", gin.H{}, 404)
+		return
+	}
+
+	invite, err := (models.OrganizationMemberInvite{}).FindByEmail(ctx, organizationID, user.Email)
+	if err != nil {
+		respond(ctx).fail("Failed to fetch invite", gin.H{}, 500)
+		return
+	}
+	if invite == nil {
+		respond(ctx).fail("Invite not found", gin.H{}, 404)
+		return
+	}
+
+	role, ok := constants.Roles[invite.Role]
+	if !ok {
+		respond(ctx).fail("Invite has an invalid role", gin.H{}, 422)
+		return
+	}
+
+	if err := (models.OrganizationMember{}).Upsert(ctx, organizationID, user.ID, role); err != nil {
+		respond(ctx).fail("Failed to accept invite", gin.H{}, 500)
+		return
+	}
+
+	if err := invite.Delete(ctx); err != nil {
+		respond(ctx).fail("Failed to clear invite", gin.H{}, 500)
+		return
+	}
+
+	respond(ctx).ok("Invite accepted successfully!", gin.H{}, 200)
+}
+
+func (OrganizationMemberInviteController) Delete(ctx *gin.Context) {
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
+		return
+	}
+
+	inviteID, ok := uintParam(ctx, "invite", "Invalid invite ID")
+	if !ok {
+		return
+	}
+
+	user := currentUser(ctx)
+
+	if _, err := (models.Organization{}).FindOwnedByID(ctx, organizationID, user.ID); err != nil {
+		respond(ctx).fail("Organization not found", gin.H{}, 404)
+		return
+	}
+
+	invite, err := (models.OrganizationMemberInvite{}).FindByID(ctx, inviteID, organizationID)
+	if err != nil {
+		respond(ctx).fail("Invite not found", gin.H{}, 404)
+		return
+	}
+
+	if err := invite.Delete(ctx); err != nil {
+		respond(ctx).fail("Failed to revoke invite", gin.H{}, 500)
+		return
+	}
+
+	respond(ctx).ok("Invite revoked successfully!", gin.H{}, 200)
 }

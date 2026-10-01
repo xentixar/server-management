@@ -33,6 +33,12 @@ func Register(router *gin.RouterGroup) {
 		group.DELETE("/:organization", organizations.Delete)
 
 		group.GET("/:organization/members", members.List)
-		group.POST("/:organization/members/invite", invites.Create)
+		group.PATCH("/:organization/members/:member", members.Update)
+		group.DELETE("/:organization/members/:member", members.Delete)
+
+		group.GET("/:organization/invites", invites.List)
+		group.POST("/:organization/invites", invites.Create)
+		group.POST("/:organization/invites/accept", invites.Accept)
+		group.DELETE("/:organization/invites/:invite", invites.Delete)
 	}
 }

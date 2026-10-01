@@ -3,6 +3,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"api/app/models"
 	"api/app/validators"
@@ -49,4 +50,14 @@ func bindJSON(ctx *gin.Context, request any) bool {
 
 func currentUser(ctx *gin.Context) models.User {
 	return ctx.MustGet("user").(models.User)
+}
+
+func uintParam(ctx *gin.Context, name, invalidMessage string) (uint, bool) {
+	id, err := strconv.Atoi(ctx.Param(name))
+	if err != nil || id <= 0 {
+		respond(ctx).fail(invalidMessage, gin.H{}, http.StatusBadRequest)
+		return 0, false
+	}
+
+	return uint(id), true
 }

@@ -43,6 +43,18 @@ func (Organization) GenerateUniqueSlug(ctx context.Context, name string) (string
 	}
 }
 
+func (Organization) FindByID(ctx context.Context, id uint, withRelations ...string) (Organization, error) {
+	query := gorm.
+		G[Organization](config.GetDatabase()).
+		Where("id = ?", id)
+
+	for _, relation := range withRelations {
+		query = query.Preload(relation, nil)
+	}
+
+	return query.First(ctx)
+}
+
 func (Organization) FindOwnedByID(ctx context.Context, id uint, ownerID uint, withRelations ...string) (Organization, error) {
 	query := gorm.
 		G[Organization](config.GetDatabase()).
