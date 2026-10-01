@@ -22,7 +22,12 @@ func Initialize() {
 		routes.Register(group)
 	}
 
-	_ = config.GetDatabase().AutoMigrate(&models.User{}, &models.PersonalAccessToken{}, &models.Organization{})
+	_ = config.GetDatabase().AutoMigrate(
+		&models.User{},
+		&models.PersonalAccessToken{},
+		&models.Organization{},
+		&models.OrganizationMember{},
+	)
 }
 
 func Run() {

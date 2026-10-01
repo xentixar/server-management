@@ -38,7 +38,7 @@ func (AuthController) Login(ctx *gin.Context) {
 		Token:  token,
 	}).Create()
 
-	response(ctx).success("Login successfull!", gin.H{
+	response(ctx).success("Login successful!", gin.H{
 		"access_token": token,
 	}, 200)
 }

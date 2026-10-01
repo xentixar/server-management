@@ -14,6 +14,9 @@ type User struct {
 	Name     string
 	Email    string `gorm:"uniqueIndex"`
 	Password string
+
+	Organizations []Organization       `gorm:"foreignKey:UserID"`
+	Memberships   []OrganizationMember `gorm:"foreignKey:UserID"`
 }
 
 func (User) FindByEmail(email string) (User, error) {

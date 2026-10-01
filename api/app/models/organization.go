@@ -16,7 +16,19 @@ type Organization struct {
 	Slug   string `gorm:"uniqueIndex"`
 	UserID uint
 
-	User User
+	User    User                 `gorm:"foreignKey:UserID"`
+	Members []OrganizationMember `gorm:"foreignKey:OrganizationID"`
+}
+
+type OrganizationMember struct {
+	gorm.Model
+	UserID         uint   `gorm:"not null;uniqueIndex:idx_org_member_role"`
+	RoleID         uint   `gorm:"not null;uniqueIndex:idx_org_member_role"`
+	OrganizationID uint   `gorm:"not null;uniqueIndex:idx_org_member_role"`
+	Role           string `gorm:"type:varchar(50);not null"`
+
+	User         User         `gorm:"foreignKey:UserID"`
+	Organization Organization `gorm:"foreignKey:OrganizationID"`
 }
 
 func (Organization) IsSlugAvailable(slug string) bool {
