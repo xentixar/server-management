@@ -121,7 +121,7 @@ async function onReinstall() {
           Agent
         </p>
         <p class="text-muted text-xs">
-          Install runs on the API over SSH. Live logs will land with the job stream later.
+          Install runs on the API over SSH.
         </p>
       </div>
       <UButton
