@@ -24,6 +24,7 @@ type ServerCron struct {
 	Enabled  bool   `gorm:"not null;default:true"`
 	Status   string `gorm:"type:varchar(20);not null;default:pending"`
 	Message  string `gorm:"type:text"`
+	LogTail  string `gorm:"type:text"`
 
 	Server Server `gorm:"foreignKey:ServerID"`
 }

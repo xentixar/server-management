@@ -36,6 +36,7 @@ func Default() *Executor {
 		"service.remove":       handleServiceRemove,
 		"service.control":      handleServiceControl,
 		"cron.sync":            handleCronSync,
+		"cron.logs":            handleCronLogs,
 	})
 }
 

@@ -66,6 +66,14 @@ export function useServerCrons(serverId: MaybeRefOrGetter<string | number>) {
     return mapCronJobResponse(res.data)
   }
 
+  async function fetchLogs(id: string): Promise<CronJobResponse> {
+    const res = await api<{ job: AgentJobApi, cron: ServerCronApi }>(
+      `${basePath()}/crons/${encodeURIComponent(id)}/logs`,
+      { method: 'POST' }
+    )
+    return mapCronJobResponse(res.data)
+  }
+
   async function getJob(jobId: string): Promise<AgentJob> {
     const res = await api<AgentJobApi>(`${basePath()}/jobs/${encodeURIComponent(jobId)}`)
     return mapJob(res.data)
@@ -101,6 +109,7 @@ export function useServerCrons(serverId: MaybeRefOrGetter<string | number>) {
     create,
     update,
     remove,
+    fetchLogs,
     getJob,
     pollJob
   }

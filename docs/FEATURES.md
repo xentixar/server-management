@@ -289,14 +289,14 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 - List services (Supervisor): name, status, command, auto-restart.
 - Start, stop, restart; view recent stdout/stderr.
-- Cron: CRUD entries with schedule validator, timezone, command, user context.
+- Cron: CRUD entries with schedule validator, timezone, command, user context; view recent output (log file tail).
 - Scope: **server-wide** (site-specific e.g. Laravel scheduler — Planned).
 
 ### Notes for backend / agent
 
-- Job kinds: `service.apply`, `service.remove`, `service.control`, `cron.sync`.
+- Job kinds: `service.apply`, `service.remove`, `service.control`, `cron.sync`, `cron.logs`.
 - Agent installs Supervisor if missing; writes `/etc/supervisor/conf.d/sa-<name>.conf`.
-- Agent validates cron expressions before write; materializes `/etc/cron.d/sa`.
+- Agent validates cron expressions before write; materializes `/etc/cron.d/sa`; redirects each job to `/var/log/sa/cron-<uid>.log`.
 - Provision creates managed Unix user `sm` (sudo); password revealed once with addon secrets. Services/cron default to that user.
 - Service/cron definitions stored in control plane; agent materializes config files.
 - API gates with `organization.servers.view` / `update` (same as runtimes).

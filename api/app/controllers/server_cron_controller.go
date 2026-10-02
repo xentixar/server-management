@@ -155,6 +155,42 @@ func (ServerController) UpdateCron(ctx *gin.Context) {
 	}, http.StatusAccepted)
 }
 
+func (ServerController) FetchCronLogs(ctx *gin.Context) {
+	server, ok := loadServerForUpdate(ctx)
+	if !ok {
+		return
+	}
+	if !requireAgentOnlineReady(ctx, server) {
+		return
+	}
+
+	cron, ok := loadCron(ctx, server.ID)
+	if !ok {
+		return
+	}
+
+	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindCronLogs); err != nil {
+		respond(ctx).fail("Failed to check jobs", gin.H{}, http.StatusInternalServerError)
+		return
+	} else if open {
+		respond(ctx).fail("A cron logs job is already in progress", gin.H{}, http.StatusConflict)
+		return
+	}
+
+	job, err := (models.AgentJob{}).Enqueue(ctx, server.ID, constants.JobKindCronLogs, map[string]any{
+		"uid": cron.PublicID(),
+	})
+	if err != nil {
+		respond(ctx).fail("Failed to enqueue job", gin.H{}, http.StatusInternalServerError)
+		return
+	}
+
+	respond(ctx).ok("Cron logs queued", gin.H{
+		"job":  resources.AgentJobResource(job),
+		"cron": resources.ServerCronResource(cron),
+	}, http.StatusAccepted)
+}
+
 func (ServerController) DeleteCron(ctx *gin.Context) {
 	server, ok := loadServerForUpdate(ctx)
 	if !ok {

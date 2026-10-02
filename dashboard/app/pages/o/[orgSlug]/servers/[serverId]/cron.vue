@@ -20,6 +20,7 @@ const {
   create,
   update,
   remove,
+  fetchLogs,
   pollJob
 } = useServerCrons(serverId)
 
@@ -28,11 +29,20 @@ const server = computed(() => getById(serverId.value))
 const canManage = computed(() => can(Ability.ServersUpdate) && server.value?.agent === 'online')
 
 const busy = ref(false)
-const activeJob = ref<AgentJob | null>(null)
+const logsOpen = ref(false)
+const logsLoading = ref(false)
+const logsTarget = ref<ServerCron | null>(null)
 const formOpen = ref(false)
 const editing = ref<ServerCron | null>(null)
 const deleteOpen = ref(false)
 const toDelete = ref<ServerCron | null>(null)
+
+const logsCron = computed(() => {
+  if (!logsTarget.value) {
+    return null
+  }
+  return crons.value.find(c => c.id === logsTarget.value!.id) || logsTarget.value
+})
 
 const form = reactive({
   schedule: '*/5 * * * *',
@@ -75,15 +85,8 @@ function openEdit(cron: ServerCron) {
 
 async function track(job: AgentJob) {
   busy.value = true
-  activeJob.value = job
   try {
-    const done = await pollJob(job.id, {
-      onTick: (j) => {
-        activeJob.value = j
-      }
-    })
-    activeJob.value = done ?? null
-    return done
+    return await pollJob(job.id)
   } finally {
     busy.value = false
   }
@@ -135,6 +138,35 @@ async function onSubmit() {
     const detail = error instanceof ApiError ? error.message : 'Request failed'
     toast.add({ title: detail, color: 'error' })
     await fetchAll()
+  }
+}
+
+async function openLogs(cron: ServerCron) {
+  logsTarget.value = cron
+  logsOpen.value = true
+  if (!canManage.value || busy.value) {
+    return
+  }
+  logsLoading.value = true
+  busy.value = true
+  try {
+    const res = await fetchLogs(cron.id)
+    await fetchAll()
+    const done = await track(res.job)
+    if (done?.status !== 'succeeded') {
+      toast.add({
+        title: 'Could not load logs',
+        description: done?.message || done?.status,
+        color: 'error'
+      })
+    }
+  } catch (error) {
+    busy.value = false
+    const detail = error instanceof ApiError ? error.message : 'Failed to load logs'
+    toast.add({ title: detail, color: 'error' })
+    await fetchAll()
+  } finally {
+    logsLoading.value = false
   }
 }
 
@@ -201,16 +233,6 @@ async function onDelete() {
       description="Cron changes need a live agent on this server."
     />
 
-    <div
-      v-if="activeJob && (activeJob.status === 'pending' || activeJob.status === 'running' || activeJob.status === 'failed')"
-      class="border-default bg-elevated/40 rounded-lg border px-4 py-3"
-    >
-      <p class="text-highlighted text-xs font-medium">
-        Cron job
-      </p>
-      <pre class="text-muted mt-1 max-h-40 overflow-auto whitespace-pre-wrap font-mono text-xs">{{ activeJob.kind }}: {{ activeJob.message || activeJob.status }}</pre>
-    </div>
-
     <template v-if="!crons.length">
       <section class="border-default rounded-lg border px-5 py-10 sm:px-8">
         <div class="flex max-w-xl flex-col gap-4">
@@ -241,48 +263,61 @@ async function onDelete() {
 
     <ul
       v-else
-      class="border-default divide-default divide-y overflow-hidden rounded-lg border"
+      class="flex flex-col gap-3"
     >
       <li
         v-for="cron in crons"
         :key="cron.id"
-        class="flex flex-wrap items-start justify-between gap-3 px-4 py-3.5 sm:px-5"
+        class="border-default rounded-lg border px-4 py-3"
       >
-        <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-highlighted font-mono text-sm font-semibold">
-              {{ cron.schedule }}
-            </span>
-            <UBadge
-              :label="cron.status"
-              :color="cronStatusColor(cron.status)"
-              variant="subtle"
-              size="sm"
-              class="capitalize"
-            />
-            <UBadge
-              v-if="!cron.enabled"
-              label="disabled"
-              color="neutral"
-              variant="subtle"
-              size="sm"
-            />
-            <UBadge
-              :label="cron.timezone"
-              color="neutral"
-              variant="subtle"
-              size="sm"
-            />
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-highlighted font-mono text-sm font-semibold">
+                {{ cron.schedule }}
+              </span>
+              <UBadge
+                :label="cron.status"
+                :color="cronStatusColor(cron.status)"
+                variant="subtle"
+                size="sm"
+                class="capitalize"
+              />
+              <UBadge
+                v-if="!cron.enabled"
+                label="disabled"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+              <UBadge
+                :label="cron.timezone"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+            </div>
+            <p
+              class="text-muted mt-1 font-mono text-xs break-all"
+              :title="cron.command"
+            >
+              {{ cron.command }}
+            </p>
+            <p class="text-muted mt-1 text-xs">
+              {{ cron.user }}
+            </p>
           </div>
-          <p class="text-muted mt-1 truncate font-mono text-xs">
-            {{ cron.command }}
-          </p>
-          <p class="text-muted mt-0.5 text-xs">
-            user {{ cron.user }}
-            <span v-if="cron.message"> · {{ cron.message }}</span>
-          </p>
+          <UButton
+            label="Logs"
+            size="xs"
+            color="primary"
+            variant="soft"
+            class="shrink-0"
+            :disabled="busy"
+            @click="openLogs(cron)"
+          />
         </div>
-        <div class="flex shrink-0 items-center gap-1.5">
+        <div class="mt-3 flex items-center justify-end gap-1 border-t border-default pt-3">
           <UButton
             icon="i-lucide-pencil"
             size="xs"
@@ -302,6 +337,53 @@ async function onDelete() {
         </div>
       </li>
     </ul>
+
+    <UModal
+      v-model:open="logsOpen"
+      :ui="{ content: 'sm:max-w-4xl' }"
+    >
+      <template #content>
+        <div class="flex max-h-[85vh] flex-col overflow-hidden">
+          <div class="border-default flex shrink-0 items-center justify-between gap-3 border-b px-5 py-3.5">
+            <div class="min-w-0">
+              <p class="text-highlighted text-base font-semibold">
+                Cron logs
+              </p>
+              <p class="text-muted mt-0.5 truncate font-mono text-xs">
+                {{ logsCron?.schedule }} {{ logsCron?.command }}
+              </p>
+            </div>
+            <div class="flex shrink-0 items-center gap-1">
+              <UButton
+                label="Refresh"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :loading="logsLoading"
+                :disabled="!logsCron || busy"
+                @click="logsCron && openLogs(logsCron)"
+              />
+              <UButton
+                icon="i-lucide-x"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                aria-label="Close"
+                @click="logsOpen = false"
+              />
+            </div>
+          </div>
+          <div class="flex min-h-0 flex-1 flex-col px-5 py-4">
+            <div class="border-default flex min-h-0 flex-1 flex-col rounded-lg border">
+              <p class="border-default text-muted shrink-0 border-b px-3 py-2 text-xs font-medium">
+                Recent output
+              </p>
+              <pre class="text-muted min-h-0 flex-1 overflow-auto p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap">{{ logsLoading ? 'Loading...' : (logsCron?.logTail || '(empty - wait for the next schedule tick)') }}</pre>
+            </div>
+          </div>
+        </div>
+      </template>
+    </UModal>
 
     <UModal v-model:open="formOpen">
       <template #content>

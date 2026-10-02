@@ -65,6 +65,7 @@ func Register(router *gin.RouterGroup) {
 		group.POST("/:organization/servers/:server/crons", servers.CreateCron)
 		group.PATCH("/:organization/servers/:server/crons/:cron", servers.UpdateCron)
 		group.DELETE("/:organization/servers/:server/crons/:cron", servers.DeleteCron)
+		group.POST("/:organization/servers/:server/crons/:cron/logs", servers.FetchCronLogs)
 		group.GET("/:organization/servers/:server/jobs/latest", servers.GetLatestJob)
 		group.GET("/:organization/servers/:server/jobs/:job", servers.GetJob)
 		group.PATCH("/:organization/servers/:server", servers.Update)

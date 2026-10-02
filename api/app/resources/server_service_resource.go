@@ -32,6 +32,7 @@ func ServerCronResource(c models.ServerCron) map[string]any {
 		"enabled":    c.Enabled,
 		"status":     c.Status,
 		"message":    c.Message,
+		"log_tail":   c.LogTail,
 		"created_at": c.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 		"updated_at": c.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}

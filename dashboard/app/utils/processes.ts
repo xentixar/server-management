@@ -49,6 +49,7 @@ export interface ServerCron {
   enabled: boolean
   status: CronStatus
   message: string
+  logTail: string
   createdAt: string
   updatedAt: string
 }
@@ -62,6 +63,7 @@ export interface ServerCronApi {
   enabled: boolean
   status: CronStatus
   message?: string
+  log_tail?: string
   created_at: string
   updated_at: string
 }
@@ -143,6 +145,7 @@ export function mapCron(data: ServerCronApi): ServerCron {
     enabled: data.enabled ?? true,
     status: data.status || 'pending',
     message: data.message || '',
+    logTail: data.log_tail || '',
     createdAt: data.created_at,
     updatedAt: data.updated_at
   }

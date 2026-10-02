@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -110,12 +111,24 @@ func supervisorStatus(ctx context.Context, name string) (string, string) {
 	return parseSupervisorStatus(out), out
 }
 
+func supervisorLogPath(name, stream string) string {
+	ext := "out"
+	if stream == "stderr" {
+		ext = "err"
+	}
+	return filepath.Join(supervisorLogDir, programName(name)+"."+ext+".log")
+}
+
 func supervisorTail(ctx context.Context, name, stream string) string {
-	out, err := run(ctx, "supervisorctl", "tail", "-100", programName(name), stream)
-	if err != nil {
+	path := supervisorLogPath(name, stream)
+	if _, err := os.Stat(path); err != nil {
 		return ""
 	}
-	return trimTail(out, 4096)
+	out, err := run(ctx, "tail", "-n", "200", path)
+	if err != nil {
+		return trimTail(out, 16384)
+	}
+	return trimTail(out, 16384)
 }
 
 func serviceResultMeta(ctx context.Context, name string) map[string]any {

@@ -31,10 +31,10 @@ func applyServiceJobResult(ctx context.Context, job AgentJob, ok bool, meta map[
 			svc.Status = s
 		}
 		if t := helpers.StringFromAny(meta["stdout_tail"]); t != "" {
-			svc.StdoutTail = helpers.TruncateTail(t, 4096)
+			svc.StdoutTail = helpers.TruncateTail(t, 16384)
 		}
 		if t := helpers.StringFromAny(meta["stderr_tail"]); t != "" {
-			svc.StderrTail = helpers.TruncateTail(t, 4096)
+			svc.StderrTail = helpers.TruncateTail(t, 16384)
 		}
 	}
 
@@ -65,24 +65,46 @@ func applyServiceJobResult(ctx context.Context, job AgentJob, ok bool, meta map[
 	return nil
 }
 
-func applyCronJobResult(ctx context.Context, job AgentJob, ok bool) error {
-	if job.Kind != constants.JobKindCronSync {
-		return nil
-	}
-	crons, err := (ServerCron{}).ListByServer(ctx, job.ServerID)
-	if err != nil {
-		return err
-	}
-	status := constants.CronStatusSynced
-	if !ok {
-		status = constants.CronStatusFailed
-	}
-	for i := range crons {
-		crons[i].Status = status
-		crons[i].Message = job.Message
-		if err := crons[i].Save(ctx); err != nil {
+func applyCronJobResult(ctx context.Context, job AgentJob, ok bool, meta map[string]any) error {
+	switch job.Kind {
+	case constants.JobKindCronSync:
+		crons, err := (ServerCron{}).ListByServer(ctx, job.ServerID)
+		if err != nil {
 			return err
 		}
+		status := constants.CronStatusSynced
+		if !ok {
+			status = constants.CronStatusFailed
+		}
+		for i := range crons {
+			crons[i].Status = status
+			crons[i].Message = job.Message
+			if err := crons[i].Save(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
+
+	case constants.JobKindCronLogs:
+		uid, _ := job.Payload["uid"].(string)
+		if uid == "" {
+			return nil
+		}
+		cron, err := (ServerCron{}).FindByPublicID(ctx, uid, job.ServerID)
+		if err != nil {
+			return nil
+		}
+		if meta != nil {
+			if t := helpers.StringFromAny(meta["log_tail"]); t != "" {
+				cron.LogTail = helpers.TruncateTail(t, 4096)
+			}
+		}
+		if !ok {
+			cron.Message = job.Message
+		} else if cron.LogTail == "" {
+			cron.LogTail = "(empty)"
+		}
+		return cron.Save(ctx)
 	}
 	return nil
 }
@@ -91,8 +113,8 @@ func ApplyProcessJobResult(ctx context.Context, job AgentJob, ok bool, meta map[
 	switch job.Kind {
 	case constants.JobKindServiceApply, constants.JobKindServiceRemove, constants.JobKindServiceControl:
 		return applyServiceJobResult(ctx, job, ok, meta)
-	case constants.JobKindCronSync:
-		return applyCronJobResult(ctx, job, ok)
+	case constants.JobKindCronSync, constants.JobKindCronLogs:
+		return applyCronJobResult(ctx, job, ok, meta)
 	default:
 		return nil
 	}

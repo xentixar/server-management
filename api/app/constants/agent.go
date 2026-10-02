@@ -20,4 +20,5 @@ const (
 	JobKindServiceRemove  = "service.remove"
 	JobKindServiceControl = "service.control"
 	JobKindCronSync       = "cron.sync"
+	JobKindCronLogs       = "cron.logs"
 )

@@ -172,7 +172,7 @@ func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool, secr
 		family.Remove(version)
 		return s.SaveProvision(ctx)
 
-	case constants.JobKindServiceApply, constants.JobKindServiceRemove, constants.JobKindServiceControl, constants.JobKindCronSync:
+	case constants.JobKindServiceApply, constants.JobKindServiceRemove, constants.JobKindServiceControl, constants.JobKindCronSync, constants.JobKindCronLogs:
 		return ApplyProcessJobResult(ctx, job, ok, secrets)
 	}
 

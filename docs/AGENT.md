@@ -74,7 +74,8 @@ Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
 | `service.apply` | `uid`, `name`, `command`, `directory?`, `user`, `processes`, `auto_restart`, `autostart`, `enabled` | Ensure Supervisor; write `/etc/supervisor/conf.d/sa-<name>.conf`; `reread`/`update`; start or stop; return status + log tails via `secrets`. Default process user is managed `sm`. |
 | `service.remove` | `uid`, `name` | Stop program; delete conf; `reread`/`update`. |
 | `service.control` | `uid`, `name`, `action` (`start`\|`stop`\|`restart`\|`status`) | `supervisorctl` action; return status + stdout/stderr tails. |
-| `cron.sync` | `entries[{uid,schedule,command,user,timezone,enabled}]` | Validate 5-field schedules; rewrite `/etc/cron.d/sa` (with `CRON_TZ` per entry). |
+| `cron.sync` | `entries[{uid,schedule,command,user,timezone,enabled}]` | Validate 5-field schedules; rewrite `/etc/cron.d/sa` (with `CRON_TZ` per entry). Each command appends stdout/stderr to `/var/log/sa/cron-<uid>.log`. |
+| `cron.logs` | `uid` | Tail last ~100 lines of that log file; return via `secrets.log_tail`. |
 
 Catalog (API): PHP `8.1`–`8.5`, Node `18`/`20`/`22`/`24`. Inventory on server: `{ php: { default, versions[{version,status}] }, node: {...}, addons[] }` with status `installed` \| `installing` \| `failed`.
 
