@@ -132,6 +132,33 @@ export function selectionFromJobPayload(payload: Record<string, unknown> | null 
   }
 }
 
+/** Restore provision form from what's actually installed on the server. */
+export function selectionFromRuntimes(runtimes: ServerRuntimes | null | undefined): ProvisionInput | null {
+  if (!runtimes) {
+    return null
+  }
+  const phpVersions = runtimes.php.versions
+    .filter(v => v.status === 'installed')
+    .map(v => v.version)
+  const nodeVersions = runtimes.node.versions
+    .filter(v => v.status === 'installed')
+    .map(v => v.version)
+  if (!phpVersions.length || !nodeVersions.length) {
+    return null
+  }
+  const set = new Set(runtimes.addons)
+  return {
+    phpVersions,
+    nodeVersions,
+    addons: {
+      redis: set.has('redis'),
+      mysql: set.has('mysql'),
+      mariadb: set.has('mariadb'),
+      postgres: set.has('postgres')
+    }
+  }
+}
+
 export function provisionBadgeColor(status: ProvisionStatus) {
   if (status === 'ready') {
     return 'success' as const
@@ -145,6 +172,27 @@ export function provisionBadgeColor(status: ProvisionStatus) {
   return 'neutral' as const
 }
 
+export function runtimeStatusColor(status: RuntimeVersionStatus) {
+  if (status === 'installed') {
+    return 'success' as const
+  }
+  if (status === 'failed') {
+    return 'error' as const
+  }
+  return 'warning' as const
+}
+
+export function addonLabel(key: string) {
+  const known = ADDON_OPTIONS.find(o => o.key === key)
+  if (known) {
+    return known.label
+  }
+  if (key === 'mysql') {
+    return 'MySQL'
+  }
+  return key
+}
+
 export const DEFAULT_PHP_VERSIONS = ['8.2', '8.3', '8.4', '8.5']
 export const DEFAULT_NODE_VERSIONS = ['20', '22', '24']
 
@@ -153,3 +201,8 @@ export const ADDON_OPTIONS = [
   { key: 'mariadb' as const, label: 'MariaDB' },
   { key: 'postgres' as const, label: 'PostgreSQL' }
 ]
+
+export const RUNTIME_INSTALL_KIND: Record<RuntimeName, string> = {
+  php: 'runtime.php.install',
+  node: 'runtime.node.install'
+}

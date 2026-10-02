@@ -8,8 +8,10 @@ import {
   DEFAULT_PHP_VERSIONS,
   provisionBadgeColor,
   selectionFromJobPayload,
+  selectionFromRuntimes,
   type AgentJob,
   type ProvisionAddons,
+  type ProvisionInput,
   type RuntimeCatalog
 } from '~/utils/runtimes'
 
@@ -99,14 +101,32 @@ function applyJob(job: AgentJob | null | undefined) {
   activeJob.value = job ?? null
 }
 
-function applySelection(job: AgentJob) {
-  const sel = selectionFromJobPayload(job.payload)
+function applyProvisionInput(sel: ProvisionInput | null | undefined) {
   if (!sel) {
-    return
+    return false
   }
   phpSelected.value = sel.phpVersions
   nodeSelected.value = sel.nodeVersions
   Object.assign(addons, sel.addons)
+  return true
+}
+
+/** Prefer installed inventory; fall back to last provision job payload. */
+function syncProvisionForm(job?: AgentJob | null) {
+  if (server.value?.provisionStatus === 'ready') {
+    if (applyProvisionInput(selectionFromRuntimes(server.value.runtimes))) {
+      return
+    }
+  }
+  if (job && applyProvisionInput(selectionFromJobPayload(job.payload))) {
+    return
+  }
+  if (!phpSelected.value.length) {
+    phpSelected.value = [...DEFAULT_PHP_VERSIONS]
+  }
+  if (!nodeSelected.value.length) {
+    nodeSelected.value = [...DEFAULT_NODE_VERSIONS]
+  }
 }
 
 function jobSummary(job: AgentJob) {
@@ -114,8 +134,8 @@ function jobSummary(job: AgentJob) {
   return job.message ? `${head}\n${job.message}` : head
 }
 
-const phpSelected = ref<string[]>([...DEFAULT_PHP_VERSIONS])
-const nodeSelected = ref<string[]>([...DEFAULT_NODE_VERSIONS])
+const phpSelected = ref<string[]>([])
+const nodeSelected = ref<string[]>([])
 const addons = reactive<ProvisionAddons>({
   redis: false,
   mysql: false,
@@ -180,27 +200,49 @@ if (server.value?.agent === 'online') {
 const latest = await getLatestJob('server.provision').catch(() => null)
 if (latest) {
   applyJob(latest)
-  applySelection(latest)
-  if (latest.status === 'pending' || latest.status === 'running') {
-    provisioning.value = true
-    pollJob(latest.id, {
-      onTick: applyJob
-    }).then(async (done) => {
-      applyJob(done)
-      if (done?.status === 'succeeded') {
-        toast.add({ title: 'Server provisioned', description: done.message, color: 'success' })
-        await maybeRevealSecrets()
-      } else if (done?.status === 'failed') {
-        toast.add({ title: 'Provision failed', description: done.message || done.status, color: 'error' })
-      }
-    }).finally(async () => {
-      provisioning.value = false
-      await fetchAll(true)
-    })
-  } else if (server.value?.hasProvisionSecrets) {
-    await revealSecrets()
-  }
 }
+syncProvisionForm(latest)
+
+if (latest && (latest.status === 'pending' || latest.status === 'running')) {
+  provisioning.value = true
+  pollJob(latest.id, {
+    onTick: applyJob
+  }).then(async (done) => {
+    applyJob(done)
+    if (done?.status === 'succeeded') {
+      toast.add({ title: 'Server provisioned', description: done.message, color: 'success' })
+      await maybeRevealSecrets()
+    } else if (done?.status === 'failed') {
+      toast.add({ title: 'Provision failed', description: done.message || done.status, color: 'error' })
+    }
+  }).finally(async () => {
+    provisioning.value = false
+    await fetchAll(true)
+    syncProvisionForm(activeJob.value)
+  })
+} else if (server.value?.hasProvisionSecrets) {
+  await revealSecrets()
+}
+
+// Keep checkboxes aligned with inventory after runtime installs / refresh.
+watch(
+  () => {
+    const s = server.value
+    if (!s || s.provisionStatus !== 'ready' || provisioning.value) {
+      return ''
+    }
+    return [
+      s.runtimes.php.versions.map(v => `${v.version}:${v.status}`).join(','),
+      s.runtimes.node.versions.map(v => `${v.version}:${v.status}`).join(','),
+      s.runtimes.addons.join(',')
+    ].join('|')
+  },
+  (key, prev) => {
+    if (key && key !== prev) {
+      syncProvisionForm(activeJob.value)
+    }
+  }
+)
 
 function togglePhp(ver: string, on: boolean) {
   if (on) {
@@ -300,6 +342,7 @@ async function onProvision() {
   } finally {
     provisioning.value = false
     await fetchAll(true)
+    syncProvisionForm(activeJob.value)
   }
 }
 </script>
