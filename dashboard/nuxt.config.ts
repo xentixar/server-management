@@ -22,6 +22,7 @@ export default defineNuxtConfig({
 
   hints: {
     features: {
+      hydration: { logs: false },
       lazyLoad: { logs: false }
     }
   },

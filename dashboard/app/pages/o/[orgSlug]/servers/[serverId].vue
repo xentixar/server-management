@@ -26,6 +26,10 @@ const links = computed(() => {
     label: 'Sites',
     icon: 'i-lucide-globe',
     to: `${base}/sites`
+  }, {
+    label: 'Runtimes',
+    icon: 'i-lucide-boxes',
+    to: `${base}/runtimes`
   }]] satisfies NavigationMenuItem[][]
 })
 </script>
@@ -42,27 +46,29 @@ const links = computed(() => {
         </template>
 
         <template #title>
-          <div class="flex min-w-0 flex-col gap-0.5">
-            <div class="flex flex-wrap items-center gap-2">
-              <NuxtLink
-                :to="orgHref('/servers')"
-                class="text-muted hover:text-highlighted text-sm"
-              >
-                Servers
-              </NuxtLink>
-              <span class="text-muted text-sm">/</span>
-              <span class="text-highlighted truncate text-sm font-semibold">
-                {{ server.hostname }}
-              </span>
-              <UBadge
-                :label="server.agent"
-                :color="agentBadgeColor(server.agent)"
-                variant="subtle"
-                size="sm"
-                class="capitalize"
-              />
-            </div>
-          </div>
+          <!-- phrasing-only: UDashboardNavbar wraps #title in <h1> -->
+          <span class="inline-flex min-w-0 max-w-full flex-wrap items-center gap-2">
+            <NuxtLink
+              :to="orgHref('/servers')"
+              class="text-muted hover:text-highlighted text-sm font-normal"
+            >
+              Servers
+            </NuxtLink>
+            <span class="text-muted text-sm font-normal">/</span>
+            <span class="truncate text-sm font-semibold">
+              {{ server.hostname }}
+            </span>
+          </span>
+        </template>
+
+        <template #right>
+          <UBadge
+            :label="server.agent"
+            :color="agentBadgeColor(server.agent)"
+            variant="subtle"
+            size="sm"
+            class="capitalize"
+          />
         </template>
       </UDashboardNavbar>
 

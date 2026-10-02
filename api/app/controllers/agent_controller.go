@@ -48,6 +48,8 @@ func (AgentController) NextJob(ctx *gin.Context) {
 		return
 	}
 
+	_ = server.ApplyJobClaim(ctx, *job)
+
 	payload := job.Payload
 	if payload == nil {
 		payload = map[string]any{}
@@ -83,6 +85,8 @@ func (AgentController) ReportJob(ctx *gin.Context) {
 		respond(ctx).fail(err.Error(), gin.H{}, http.StatusConflict)
 		return
 	}
+
+	_ = server.ApplyJobResult(ctx, job, req.OK)
 
 	ctx.JSON(http.StatusOK, gin.H{"ok": true})
 }

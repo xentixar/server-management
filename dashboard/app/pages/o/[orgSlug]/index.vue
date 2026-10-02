@@ -8,8 +8,6 @@ const { selected, orgHref } = useOrganizations()
 const { fetchAll: fetchServers } = useServers()
 const { overview, isEmpty } = useOrgOverview()
 const { currentPlan, subscription } = useBilling()
-const toast = useToast()
-
 await fetchServers()
 
 const stats = computed(() => [{
@@ -40,13 +38,6 @@ function activityColor(status: OverviewActivity['status']) {
   return 'primary' as const
 }
 
-function onTerraformSoon() {
-  toast.add({
-    title: 'Coming later',
-    description: 'Terraform provisioning lands in a later phase.',
-    color: 'neutral'
-  })
-}
 </script>
 
 <template>
@@ -138,21 +129,14 @@ function onTerraformSoon() {
                 Add your first server
               </h2>
               <p class="text-muted text-sm leading-relaxed">
-                Connect a machine over SSH or provision one with Terraform. Once the agent heartbeats, sites and deploys show up on this dashboard.
+                Connect a machine over SSH. Once the agent heartbeats, provision the stack and sites show up on this dashboard.
               </p>
             </div>
             <div class="flex flex-wrap gap-2">
               <UButton
                 :to="orgHref('/servers/new')"
-                label="Add server manually"
+                label="Add server"
                 icon="i-lucide-terminal"
-              />
-              <UButton
-                label="Provision with Terraform"
-                color="neutral"
-                variant="outline"
-                icon="i-lucide-cloud"
-                @click="onTerraformSoon"
               />
             </div>
           </div>

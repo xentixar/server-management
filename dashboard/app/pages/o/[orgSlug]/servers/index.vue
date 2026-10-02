@@ -62,14 +62,6 @@ async function onConfirmDelete() {
   }
 }
 
-function onTerraformSoon() {
-  toast.add({
-    title: 'Coming later',
-    description: 'Terraform provisioning lands in a later phase.',
-    color: 'neutral'
-  })
-}
-
 function onAddClick() {
   if (atCapacity.value) {
     toast.add({
@@ -93,13 +85,6 @@ function onAddClick() {
         </template>
 
         <template #right>
-          <UButton
-            label="Provision"
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-cloud"
-            @click="onTerraformSoon"
-          />
           <UButton
             :to="atCapacity ? undefined : orgHref('/servers/new')"
             label="Add server"
@@ -126,21 +111,14 @@ function onAddClick() {
                   No servers yet
                 </h2>
                 <p class="text-muted text-sm leading-relaxed">
-                  Add an existing machine over SSH, or provision one with Terraform when that flow is ready.
+                  Add an existing machine over SSH. Once the agent heartbeats, you can provision the stack and manage sites from here.
                 </p>
               </div>
               <div class="flex flex-wrap gap-2">
                 <UButton
                   :to="orgHref('/servers/new')"
-                  label="Add server manually"
+                  label="Add server"
                   icon="i-lucide-terminal"
-                />
-                <UButton
-                  label="Provision with Terraform"
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-cloud"
-                  @click="onTerraformSoon"
                 />
               </div>
             </div>

@@ -57,6 +57,20 @@ Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
 | Next job | `GET /api/v1/agent/jobs/next` | `204` if none; else `{ id, kind, payload }`. |
 | Result | `POST /api/v1/agent/jobs/:id/result` | `{ ok, message, exit_code }`. |
 
+### Job kinds
+
+| Kind | Payload | Behavior |
+|------|---------|----------|
+| `ping` | — | Health check (`pong`). |
+| `server.provision` | `php_versions[]`, `node_versions[]`, `addons{redis,mysql,mariadb,postgres}` | Ubuntu/Debian only: nginx, certbot, Composer, packages.sury.org multi-PHP, fnm Node, optional DB/cache. |
+| `runtime.php.install` | `version` | Install one allowlisted PHP (8.1–8.5) + FPM. |
+| `runtime.node.install` | `version` | `fnm install` one allowlisted Node (18/20/22/24). |
+| `runtime.php.remove` / `runtime.node.remove` | `version` | Reserved; currently fail closed. |
+
+Catalog (API): PHP `8.1`–`8.5`, Node `18`/`20`/`22`/`24`. Inventory on server: `{ php: { default, versions[{version,status}] }, node: {...}, addons[] }` with status `installed` \| `installing` \| `failed`.
+
+Org routes (JWT): `POST .../servers/:id/provision`, `GET/POST .../runtimes`, `GET .../runtimes/catalog`, `PATCH .../runtimes/default`, `GET .../jobs/:job`.
+
 Agent package layout:
 
 ```text
@@ -66,10 +80,10 @@ agent/
   internal/protocol/      # wire types + version
   internal/client/        # HTTP
   internal/loop/          # heartbeat + poll
-  internal/executor/      # job handlers (ping today)
+  internal/executor/      # job handlers (ping, provision, runtimes)
 ```
 
-Add capabilities by registering handlers in `executor` (fail closed for unknown kinds).
+Add capabilities by registering handlers in `executor` (fail closed for unknown kinds). Rebuild/redeploy the agent binary after new kinds land.
 
 ## Local debug
 

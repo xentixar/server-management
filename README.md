@@ -40,9 +40,9 @@ cp .env.example .env
 # Example: PUBLIC_API_URL=http://192.168.1.50:8080
 
 # Build agent binaries the API will SCP onto hosts
-mkdir -p bin
-(cd ../agent && GOOS=linux GOARCH=amd64 go build -o ../api/bin/agent-linux-amd64 .)
-(cd ../agent && GOOS=linux GOARCH=arm64 go build -o ../api/bin/agent-linux-arm64 .)
+mkdir -p api/bin
+(cd agent && GOOS=linux GOARCH=amd64 go build -o ../api/bin/agent-linux-amd64 .)
+(cd agent && GOOS=linux GOARCH=arm64 go build -o ../api/bin/agent-linux-arm64 .)
 
 go run .
 ```

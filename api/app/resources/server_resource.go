@@ -15,22 +15,36 @@ func ServerResource(data models.Server) map[string]any {
 		lastSeenAt = data.LastSeenAt.UTC().Format("2006-01-02T15:04:05Z")
 	}
 
+	var provisionedAt any
+	if data.ProvisionedAt != nil {
+		provisionedAt = data.ProvisionedAt.UTC().Format("2006-01-02T15:04:05Z")
+	}
+
+	runtimes := data.Runtimes
+	runtimes.Normalize()
+	if data.ProvisionStatus == "" {
+		data.ProvisionStatus = "none"
+	}
+
 	return map[string]any{
-		"id":            data.ID,
-		"hostname":      data.Hostname,
-		"ip":            data.IPAddress,
-		"ssh_port":      data.SSHPort,
-		"ssh_user":      data.SSHUser,
-		"auth_method":   data.AuthenticationMethod,
-		"has_key":       data.PrivateKey != "",
-		"region":        data.Region,
-		"labels":        labels,
-		"notes":         data.Notes,
-		"agent":         data.AgentStatus,
-		"agent_version": data.AgentVersion,
-		"last_seen_at":  lastSeenAt,
-		"sites":         0, // ponytail: no Site model yet
-		"created_at":    data.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"id":               data.ID,
+		"hostname":         data.Hostname,
+		"ip":               data.IPAddress,
+		"ssh_port":         data.SSHPort,
+		"ssh_user":         data.SSHUser,
+		"auth_method":      data.AuthenticationMethod,
+		"has_key":          data.PrivateKey != "",
+		"region":           data.Region,
+		"labels":           labels,
+		"notes":            data.Notes,
+		"agent":            data.AgentStatus,
+		"agent_version":    data.AgentVersion,
+		"last_seen_at":     lastSeenAt,
+		"provision_status": data.ProvisionStatus,
+		"provisioned_at":   provisionedAt,
+		"runtimes":         runtimes,
+		"sites":            0,
+		"created_at":       data.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
 

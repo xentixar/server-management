@@ -195,13 +195,6 @@ async function onTestConnection() {
   }
 }
 
-function onTerraformSoon() {
-  toast.add({
-    title: 'Coming later',
-    description: 'Terraform provisioning lands in a later phase.',
-    color: 'neutral'
-  })
-}
 </script>
 
 <template>
@@ -457,15 +450,7 @@ function onTerraformSoon() {
         </UForm>
 
         <p class="text-muted text-xs">
-          Prefer cloud provision?
-          <button
-            type="button"
-            class="text-primary font-medium"
-            @click="onTerraformSoon"
-          >
-            Terraform wizard
-          </button>
-          comes later.
+          After the agent comes online, provision nginx, PHP, Node, and optional databases from the server overview.
         </p>
       </div>
     </template>

@@ -87,6 +87,34 @@ func (AgentJob) FindForServer(ctx context.Context, id uint, serverID uint) (Agen
 		First(ctx)
 }
 
+func (AgentJob) HasOpen(ctx context.Context, serverID uint, kind string) (bool, error) {
+	var count int64
+	err := config.GetDatabase().WithContext(ctx).
+		Model(&AgentJob{}).
+		Where("server_id = ? AND kind = ? AND status IN ?", serverID, kind, []string{
+			constants.JobStatusPending,
+			constants.JobStatusRunning,
+		}).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (AgentJob) LatestByKind(ctx context.Context, serverID uint, kind string) (*AgentJob, error) {
+	var job AgentJob
+	q := config.GetDatabase().WithContext(ctx).Where("server_id = ?", serverID)
+	if kind != "" {
+		q = q.Where("kind = ?", kind)
+	}
+	err := q.Order("id desc").First(&job).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &job, nil
+}
+
 func (j *AgentJob) Complete(ctx context.Context, ok bool, message string, exitCode int) error {
 	if j.Status != constants.JobStatusRunning && j.Status != constants.JobStatusPending {
 		return errors.New("job is not open")

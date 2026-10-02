@@ -257,7 +257,7 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 ## 8. Runtime & version management
 
-**Status:** Planned
+**Status:** Partial — stack provision + inventory + thin Runtimes UI **Done**; per-site bind and rich management UI **Planned**.
 
 ### User goals
 
@@ -265,15 +265,15 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 ### Key actions
 
-- **Node**: install versions (nvm/fnm-style), set default for new sites, per-site override.
-- **PHP**: install versions, extensions (mbstring, redis, etc.), default and per-site FPM pool version.
-- **Redis**: install, bind address, persistence mode, service control.
-- **Databases**: MySQL/MariaDB, PostgreSQL, SQLite where applicable — install server packages, create instances (**Planned**; see Database manager).
+- **Node**: install versions via fnm on the host; set server default; per-site override **Planned**.
+- **PHP**: multi-version via Ondřej packages + FPM; set server default; per-site pool **Planned**.
+- **Redis / MySQL / MariaDB / PostgreSQL**: optional addons at provision time; bind/persistence/DB CRUD **Planned**.
+- Thin **Runtimes** tab: list inventory, install more versions, set default (contracts ready for richer UI).
 
 ### Notes for backend / agent
 
-- Version installs are long-running jobs; idempotent scripts on agent.
-- Dashboard shows installed vs available versions from agent inventory.
+- Version installs are long-running agent jobs (`server.provision`, `runtime.*.install`).
+- Dashboard reads `runtimes` inventory from the control plane (seeded from job payloads).
 
 ---
 

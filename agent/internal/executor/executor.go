@@ -24,7 +24,12 @@ func New(handlers map[string]Handler) *Executor {
 // Default registers built-in kinds. Unknown kinds fail closed.
 func Default() *Executor {
 	return New(map[string]Handler{
-		"ping": handlePing,
+		"ping":                 handlePing,
+		"server.provision":     handleServerProvision,
+		"runtime.php.install":  handleRuntimePHPInstall,
+		"runtime.node.install": handleRuntimeNodeInstall,
+		"runtime.php.remove":   handleRuntimeRemove,
+		"runtime.node.remove":  handleRuntimeRemove,
 	})
 }
 

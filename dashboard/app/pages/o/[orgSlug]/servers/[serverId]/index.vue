@@ -1,16 +1,67 @@
 <script setup lang="ts">
 import { formatDate } from '~/utils/billing'
 import { ApiError } from '~/utils/api'
+import { Ability } from '~/utils/auth/abilities'
+import {
+  ADDON_OPTIONS,
+  DEFAULT_NODE_VERSIONS,
+  DEFAULT_PHP_VERSIONS,
+  provisionBadgeColor,
+  selectionFromJobPayload,
+  type AgentJob,
+  type ProvisionAddons,
+  type RuntimeCatalog
+} from '~/utils/runtimes'
 
 const route = useRoute()
 const toast = useToast()
+const { can } = useGate()
+const { orgHref } = useOrganizations()
 const serverId = computed(() => String(route.params.serverId || ''))
 
 const { getById, fetchAll, bootstrap } = useServers()
+const {
+  provision,
+  getCatalog,
+  getLatestJob,
+  pollJob
+} = useServerRuntimes(serverId)
+
 await fetchAll()
 
 const server = computed(() => getById(serverId.value))
 const bootstrapping = ref(false)
+const provisioning = ref(false)
+const activeJob = ref<AgentJob | null>(null)
+const catalog = ref<RuntimeCatalog>({ php: DEFAULT_PHP_VERSIONS, node: DEFAULT_NODE_VERSIONS })
+
+function applyJob(job: AgentJob | null | undefined) {
+  activeJob.value = job ?? null
+}
+
+function applySelection(job: AgentJob) {
+  const sel = selectionFromJobPayload(job.payload)
+  if (!sel) {
+    return
+  }
+  phpSelected.value = sel.phpVersions
+  nodeSelected.value = sel.nodeVersions
+  Object.assign(addons, sel.addons)
+}
+
+function jobSummary(job: AgentJob) {
+  const head = `Job #${job.id} · ${job.status}`
+  return job.message ? `${head}\n${job.message}` : head
+}
+
+const phpSelected = ref<string[]>([...DEFAULT_PHP_VERSIONS])
+const nodeSelected = ref<string[]>([...DEFAULT_NODE_VERSIONS])
+const addons = reactive<ProvisionAddons>({
+  redis: false,
+  mysql: false,
+  mariadb: false,
+  postgres: false
+})
 
 const facts = computed(() => {
   const s = server.value
@@ -33,10 +84,87 @@ const facts = computed(() => {
     label: 'Agent',
     value: s.agentVersion || s.agent
   }, {
+    label: 'Stack',
+    value: s.provisionStatus
+  }, {
     label: 'Added',
     value: formatDate(s.createdAt)
   }]
 })
+
+const canUpdate = computed(() => can(Ability.ServersUpdate))
+
+const canProvision = computed(() =>
+  !!server.value
+  && server.value.agent === 'online'
+  && canUpdate.value
+  && !['pending', 'running'].includes(server.value.provisionStatus)
+)
+
+const provisionLabel = computed(() => {
+  const status = server.value?.provisionStatus
+  if (status === 'ready' || status === 'failed') {
+    return 'Re-provision'
+  }
+  return 'Provision server'
+})
+
+watch(() => addons.mysql, (on) => {
+  if (on) {
+    addons.mariadb = false
+  }
+})
+watch(() => addons.mariadb, (on) => {
+  if (on) {
+    addons.mysql = false
+  }
+})
+
+if (server.value?.agent === 'online') {
+  try {
+    catalog.value = await getCatalog()
+  } catch {
+    // keep defaults
+  }
+}
+
+const latest = await getLatestJob('server.provision').catch(() => null)
+if (latest) {
+  applyJob(latest)
+  applySelection(latest)
+  if (latest.status === 'pending' || latest.status === 'running') {
+    provisioning.value = true
+    pollJob(latest.id, {
+      onTick: applyJob
+    }).then((done) => {
+      applyJob(done)
+      if (done?.status === 'succeeded') {
+        toast.add({ title: 'Server provisioned', description: done.message, color: 'success' })
+      } else if (done?.status === 'failed') {
+        toast.add({ title: 'Provision failed', description: done.message || done.status, color: 'error' })
+      }
+    }).finally(async () => {
+      provisioning.value = false
+      await fetchAll(true)
+    })
+  }
+}
+
+function togglePhp(ver: string, on: boolean) {
+  if (on) {
+    phpSelected.value = [...new Set([...phpSelected.value, ver])]
+  } else {
+    phpSelected.value = phpSelected.value.filter(v => v !== ver)
+  }
+}
+
+function toggleNode(ver: string, on: boolean) {
+  if (on) {
+    nodeSelected.value = [...new Set([...nodeSelected.value, ver])]
+  } else {
+    nodeSelected.value = nodeSelected.value.filter(v => v !== ver)
+  }
+}
 
 async function onReinstall() {
   const s = server.value
@@ -65,6 +193,60 @@ async function onReinstall() {
     bootstrapping.value = false
   }
 }
+
+async function onProvision() {
+  if (!canProvision.value) {
+    return
+  }
+  if (!phpSelected.value.length || !nodeSelected.value.length) {
+    toast.add({
+      title: 'Select versions',
+      description: 'Pick at least one PHP and one Node version.',
+      color: 'warning'
+    })
+    return
+  }
+
+  provisioning.value = true
+  activeJob.value = null
+  try {
+    const job = await provision({
+      phpVersions: phpSelected.value,
+      nodeVersions: nodeSelected.value,
+      addons: { ...addons }
+    })
+    applyJob(job)
+    await fetchAll(true)
+    const done = await pollJob(job.id, { onTick: applyJob })
+    applyJob(done)
+    toast.add({
+      title: done?.status === 'succeeded' ? 'Server provisioned' : 'Provision failed',
+      description: done?.message || done?.status,
+      color: done?.status === 'succeeded' ? 'success' : 'error'
+    })
+  } catch (error) {
+    const detail = error instanceof ApiError && error.data?.message
+      ? String(error.data.message)
+      : error instanceof Error ? error.message : 'Provision failed'
+    activeJob.value = {
+      id: 0,
+      kind: 'server.provision',
+      payload: {},
+      status: 'failed',
+      message: detail,
+      exitCode: 1,
+      createdAt: new Date().toISOString()
+    }
+    toast.add({
+      title: 'Provision failed',
+      description: detail,
+      color: 'error'
+    })
+  } finally {
+    provisioning.value = false
+    await fetchAll(true)
+  }
+}
 </script>
 
 <template>
@@ -74,7 +256,7 @@ async function onReinstall() {
   >
     <section
       aria-label="Server summary"
-      class="border-default grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-3 lg:grid-cols-6"
+      class="border-default grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-3 lg:grid-cols-7"
     >
       <div
         v-for="fact in facts"
@@ -130,9 +312,127 @@ async function onReinstall() {
         variant="outline"
         size="sm"
         :loading="bootstrapping"
+        :disabled="!canUpdate"
         @click="onReinstall"
       />
     </div>
+
+    <section
+      v-if="server.agent === 'online'"
+      class="border-default flex flex-col gap-4 rounded-lg border px-4 py-4 sm:px-5"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="text-highlighted text-sm font-semibold">
+              Provision stack
+            </p>
+            <UBadge
+              :label="server.provisionStatus"
+              :color="provisionBadgeColor(server.provisionStatus)"
+              variant="subtle"
+              size="sm"
+              class="capitalize"
+            />
+          </div>
+          <p class="text-muted mt-1 text-xs">
+            Install nginx, certbot, Composer, multi-version PHP (Sury) and Node (fnm), plus optional databases.
+          </p>
+        </div>
+        <UButton
+          :label="provisionLabel"
+          color="primary"
+          size="sm"
+          class="shrink-0"
+          :loading="provisioning"
+          :disabled="!canProvision"
+          @click="onProvision"
+        />
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <p class="text-highlighted mb-2 text-xs font-medium tracking-wide uppercase">
+            PHP versions
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <UCheckbox
+              v-for="ver in catalog.php"
+              :key="`php-${ver}`"
+              :model-value="phpSelected.includes(ver)"
+              :label="ver"
+              :disabled="provisioning || !canProvision"
+              @update:model-value="togglePhp(ver, $event === true)"
+            />
+          </div>
+        </div>
+        <div>
+          <p class="text-highlighted mb-2 text-xs font-medium tracking-wide uppercase">
+            Node versions
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <UCheckbox
+              v-for="ver in catalog.node"
+              :key="`node-${ver}`"
+              :model-value="nodeSelected.includes(ver)"
+              :label="ver"
+              :disabled="provisioning || !canProvision"
+              @update:model-value="toggleNode(ver, $event === true)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-highlighted mb-2 text-xs font-medium tracking-wide uppercase">
+          Add-ons
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <UCheckbox
+            v-for="opt in ADDON_OPTIONS"
+            :key="opt.key"
+            v-model="addons[opt.key]"
+            :label="opt.label"
+            :disabled="provisioning || !canProvision"
+          />
+        </div>
+        <p class="text-muted mt-1 text-xs">
+          MySQL and MariaDB are mutually exclusive.
+        </p>
+      </div>
+
+      <div
+        v-if="activeJob"
+        class="border-default bg-elevated/40 rounded-md border px-3 py-2"
+      >
+        <p class="text-highlighted text-xs font-medium">
+          Provision job
+        </p>
+        <pre class="text-muted mt-1 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-xs">{{ jobSummary(activeJob) }}</pre>
+      </div>
+      <UAlert
+        v-if="activeJob?.status === 'failed' && activeJob.message"
+        color="error"
+        variant="subtle"
+        icon="i-lucide-circle-alert"
+        title="Provision failed"
+        :description="activeJob.message"
+      />
+
+      <p
+        v-if="server.provisionStatus === 'ready'"
+        class="text-muted text-xs"
+      >
+        Manage installed versions on the
+        <NuxtLink
+          :to="orgHref(`/servers/${serverId}/runtimes`)"
+          class="text-highlighted underline"
+        >
+          Runtimes
+        </NuxtLink>
+        tab.
+      </p>
+    </section>
 
     <section
       v-if="server.labels.length || server.notes"

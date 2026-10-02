@@ -30,6 +30,9 @@ type Server struct {
 	AgentToken           string   `gorm:"uniqueIndex"`
 	AgentVersion         string
 	LastSeenAt           *time.Time
+	ProvisionStatus      string `gorm:"type:varchar(20);not null;default:none"`
+	ProvisionedAt        *time.Time
+	Runtimes             ServerRuntimes `gorm:"serializer:json"`
 
 	Organization Organization `gorm:"foreignKey:OrganizationID"`
 }
@@ -67,12 +70,19 @@ func (s *Server) Create(ctx context.Context) error {
 	if !constants.IsValidAgentStatus(s.AgentStatus) {
 		return errors.New("invalid agent status")
 	}
+	if s.ProvisionStatus == "" {
+		s.ProvisionStatus = constants.ProvisionStatusNone
+	}
+	if !constants.IsValidProvisionStatus(s.ProvisionStatus) {
+		return errors.New("invalid provision status")
+	}
 	if s.SSHPort == 0 {
 		s.SSHPort = 22
 	}
 	if s.Labels == nil {
 		s.Labels = []string{}
 	}
+	s.Runtimes.Normalize()
 	if s.AgentToken == "" {
 		token, err := helpers.GenerateToken()
 		if err != nil {
@@ -106,9 +116,22 @@ func (s *Server) Update(ctx context.Context) error {
 	if s.AgentStatus != "" && !constants.IsValidAgentStatus(s.AgentStatus) {
 		return errors.New("invalid agent status")
 	}
+	if s.ProvisionStatus != "" && !constants.IsValidProvisionStatus(s.ProvisionStatus) {
+		return errors.New("invalid provision status")
+	}
+	s.Runtimes.Normalize()
 
 	_, err := gorm.G[Server](config.GetDatabase()).Where("id = ?", s.ID).Updates(ctx, *s)
 	return err
+}
+
+func (s *Server) SaveProvision(ctx context.Context) error {
+	s.Runtimes.Normalize()
+	// Select+struct Updates so serializer:json runs (map[string]any skips it).
+	return config.GetDatabase().WithContext(ctx).
+		Model(s).
+		Select("ProvisionStatus", "ProvisionedAt", "Runtimes").
+		Updates(s).Error
 }
 
 func (s *Server) Delete(ctx context.Context) error {

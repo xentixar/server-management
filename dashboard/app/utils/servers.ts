@@ -1,3 +1,5 @@
+import { mapRuntimes, type ProvisionStatus, type ServerRuntimes } from '~/utils/runtimes'
+
 export type AgentStatus = 'pending' | 'online' | 'offline' | 'degraded'
 export type SshAuthMethod = 'key' | 'password'
 
@@ -15,6 +17,9 @@ export interface Server {
   agent: AgentStatus
   agentVersion?: string
   lastSeenAt?: string | null
+  provisionStatus: ProvisionStatus
+  provisionedAt?: string | null
+  runtimes: ServerRuntimes
   sites: number
   createdAt: string
   agentToken?: string
@@ -52,6 +57,9 @@ export interface ServerApi {
   agent: AgentStatus
   agent_version?: string
   last_seen_at?: string | null
+  provision_status?: ProvisionStatus
+  provisioned_at?: string | null
+  runtimes?: ServerRuntimes
   sites: number
   created_at: string
   agent_token?: string
@@ -76,6 +84,9 @@ export function mapServer(data: ServerApi): Server {
     agent: data.agent,
     agentVersion: data.agent_version || undefined,
     lastSeenAt: data.last_seen_at,
+    provisionStatus: data.provision_status || 'none',
+    provisionedAt: data.provisioned_at,
+    runtimes: mapRuntimes(data.runtimes),
     sites: data.sites ?? 0,
     createdAt: data.created_at,
     agentToken: data.agent_token,
