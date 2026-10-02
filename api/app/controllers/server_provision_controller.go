@@ -189,6 +189,7 @@ func (ServerController) InstallRuntime(ctx *gin.Context) {
 		return
 	}
 
+	setDefault := req.SetDefault || family.Default == ""
 	family.Upsert(req.Version, constants.RuntimeStatusInstalling)
 	if err := server.SaveProvision(ctx); err != nil {
 		respond(ctx).fail("Failed to update runtimes", gin.H{}, http.StatusInternalServerError)
@@ -198,7 +199,7 @@ func (ServerController) InstallRuntime(ctx *gin.Context) {
 	job, err := (models.AgentJob{}).Enqueue(ctx, server.ID, kind, map[string]any{
 		"runtime":     req.Runtime,
 		"version":     req.Version,
-		"set_default": req.SetDefault,
+		"set_default": setDefault,
 	})
 	if err != nil {
 		respond(ctx).fail("Failed to enqueue job", gin.H{}, http.StatusInternalServerError)
@@ -225,6 +226,10 @@ func (ServerController) SetRuntimeDefault(ctx *gin.Context) {
 	if !ok {
 		return
 	}
+	if server.AgentStatus != constants.AgentStatusOnline {
+		respond(ctx).fail("Agent must be online", gin.H{}, http.StatusUnprocessableEntity)
+		return
+	}
 	if !requireProvisionReady(ctx, server) {
 		return
 	}
@@ -244,14 +249,30 @@ func (ServerController) SetRuntimeDefault(ctx *gin.Context) {
 		respond(ctx).fail("Version is not installed", gin.H{}, http.StatusUnprocessableEntity)
 		return
 	}
-
-	family.Default = req.Version
-	if err := server.SaveProvision(ctx); err != nil {
-		respond(ctx).fail("Failed to update default", gin.H{}, http.StatusInternalServerError)
+	kind := constants.JobKindRuntimePHPDefault
+	if req.Runtime == constants.RuntimeNode {
+		kind = constants.JobKindRuntimeNodeDefault
+	}
+	open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, kind)
+	if err != nil {
+		respond(ctx).fail("Failed to check jobs", gin.H{}, http.StatusInternalServerError)
+		return
+	}
+	if open {
+		respond(ctx).fail("A set-default job is already in progress", gin.H{}, http.StatusConflict)
 		return
 	}
 
-	respond(ctx).ok("Default runtime updated", server.Runtimes, http.StatusOK)
+	job, err := (models.AgentJob{}).Enqueue(ctx, server.ID, kind, map[string]any{
+		"runtime": req.Runtime,
+		"version": req.Version,
+	})
+	if err != nil {
+		respond(ctx).fail("Failed to enqueue job", gin.H{}, http.StatusInternalServerError)
+		return
+	}
+
+	respond(ctx).ok("Set default queued", resources.AgentJobResource(job), http.StatusAccepted)
 }
 
 func (ServerController) GetProvisionSecrets(ctx *gin.Context) {

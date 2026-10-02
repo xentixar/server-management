@@ -36,6 +36,15 @@ func TestNodeVersionAllowlist(t *testing.T) {
 	}
 }
 
+func TestHighestVersion(t *testing.T) {
+	if got := highestVersion([]string{"20", "24", "22"}); got != "24" {
+		t.Fatalf("got %s", got)
+	}
+	if got := highestVersion([]string{"8.2", "8.5", "8.4"}); got != "8.5" {
+		t.Fatalf("got %s", got)
+	}
+}
+
 func TestRandomPassword(t *testing.T) {
 	a, err := randomPassword(24)
 	if err != nil {

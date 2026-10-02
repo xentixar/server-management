@@ -67,7 +67,8 @@ func runShell(ctx context.Context, script string) (string, error) {
 }
 
 func runShellEnv(ctx context.Context, extraEnv []string, script string) (string, error) {
-	return runEnv(ctx, extraEnv, "bash", "-lc", script)
+	// bash -c (not -lc): login profiles fight with noninteractive agent env (fnm/HOME).
+	return runEnv(ctx, extraEnv, "bash", "-c", script)
 }
 
 func hasCommand(name string) bool {

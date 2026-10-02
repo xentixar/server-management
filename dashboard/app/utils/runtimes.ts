@@ -206,3 +206,8 @@ export const RUNTIME_INSTALL_KIND: Record<RuntimeName, string> = {
   php: 'runtime.php.install',
   node: 'runtime.node.install'
 }
+
+export const RUNTIME_DEFAULT_KIND: Record<RuntimeName, string> = {
+  php: 'runtime.php.default',
+  node: 'runtime.node.default'
+}

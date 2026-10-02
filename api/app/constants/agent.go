@@ -11,6 +11,8 @@ const (
 	JobKindServerProvision    = "server.provision"
 	JobKindRuntimePHPInstall  = "runtime.php.install"
 	JobKindRuntimeNodeInstall = "runtime.node.install"
+	JobKindRuntimePHPDefault  = "runtime.php.default"
+	JobKindRuntimeNodeDefault = "runtime.node.default"
 	JobKindRuntimePHPRemove   = "runtime.php.remove"
 	JobKindRuntimeNodeRemove  = "runtime.node.remove"
 )

@@ -115,6 +115,25 @@ func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool, secr
 		}
 		return s.SaveProvision(ctx)
 
+	case constants.JobKindRuntimePHPDefault, constants.JobKindRuntimeNodeDefault:
+		if !ok {
+			return nil
+		}
+		runtime := constants.RuntimePHP
+		if job.Kind == constants.JobKindRuntimeNodeDefault {
+			runtime = constants.RuntimeNode
+		}
+		version, _ := job.Payload["version"].(string)
+		family := s.Runtimes.Family(runtime)
+		if family == nil || version == "" {
+			return nil
+		}
+		if v := family.Find(version); v == nil || v.Status != constants.RuntimeStatusInstalled {
+			return nil
+		}
+		family.Default = version
+		return s.SaveProvision(ctx)
+
 	case constants.JobKindRuntimePHPRemove, constants.JobKindRuntimeNodeRemove:
 		if !ok {
 			return nil

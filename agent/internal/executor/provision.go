@@ -62,6 +62,16 @@ func handleServerProvision(ctx context.Context, job protocol.Job) (string, map[s
 			return "", nil, err
 		}
 	}
+	if def := highestVersion(nodeList); def != "" {
+		if err := applyNodeDefault(ctx, def); err != nil {
+			return "", nil, fmt.Errorf("node default: %w", err)
+		}
+	}
+	if def := highestVersion(phpList); def != "" {
+		if err := applyPHPDefault(ctx, def); err != nil {
+			return "", nil, fmt.Errorf("php default: %w", err)
+		}
+	}
 
 	var enabledAddons []string
 	secrets := map[string]any{}
@@ -141,10 +151,12 @@ func installNodeVersion(ctx context.Context, version string) error {
 	if err := validateNodeVersion(version); err != nil {
 		return err
 	}
-	_, err := runShell(ctx, fmt.Sprintf(
-		`export PATH="/usr/local/share/fnm:$PATH"; eval "$(fnm env)"; fnm install %s; fnm default %s`,
-		version, version,
-	))
+	script := `set -euo pipefail
+export PATH="/usr/local/bin:/usr/local/share/fnm:$PATH"
+export FNM_DIR="${FNM_DIR:-$HOME/.local/share/fnm}"
+eval "$(fnm env --shell bash)"
+fnm install "$SM_NODE_VER"`
+	_, err := runShellEnv(ctx, append(fnmEnv(), "SM_NODE_VER="+version), script)
 	return err
 }
 

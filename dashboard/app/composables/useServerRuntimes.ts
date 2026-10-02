@@ -59,11 +59,11 @@ export function useServerRuntimes(serverId: MaybeRefOrGetter<string | number>) {
   }
 
   async function setDefault(runtime: RuntimeName, version: string) {
-    const res = await api<ServerRuntimes>(`${basePath()}/runtimes/default`, {
+    const res = await api<AgentJobApi>(`${basePath()}/runtimes/default`, {
       method: 'PATCH',
       body: { runtime, version }
     })
-    return mapRuntimes(res.data)
+    return mapJob(res.data)
   }
 
   async function getJob(jobId: number) {

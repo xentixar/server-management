@@ -25,6 +25,12 @@ func handleRuntimePHPInstall(ctx context.Context, job protocol.Job) (string, map
 		return "", nil, err
 	}
 	_ = enableService(ctx, "php"+version+"-fpm")
+	setDefault, _ := job.Payload["set_default"].(bool)
+	if setDefault {
+		if err := applyPHPDefault(ctx, version); err != nil {
+			return "", nil, err
+		}
+	}
 	return "installed php " + version, nil, nil
 }
 
@@ -36,7 +42,39 @@ func handleRuntimeNodeInstall(ctx context.Context, job protocol.Job) (string, ma
 	if err := installNodeVersion(ctx, version); err != nil {
 		return "", nil, err
 	}
+	setDefault, _ := job.Payload["set_default"].(bool)
+	if setDefault {
+		if err := applyNodeDefault(ctx, version); err != nil {
+			return "", nil, err
+		}
+	} else {
+		// Still expose *some* node on PATH if none linked yet.
+		if !hasCommand("node") {
+			if err := applyNodeDefault(ctx, version); err != nil {
+				return "", nil, err
+			}
+		}
+	}
 	return "installed node " + version, nil, nil
+}
+
+func handleRuntimePHPDefault(ctx context.Context, job protocol.Job) (string, map[string]any, error) {
+	version, _ := job.Payload["version"].(string)
+	if err := applyPHPDefault(ctx, version); err != nil {
+		return "", nil, err
+	}
+	return "php default " + version, nil, nil
+}
+
+func handleRuntimeNodeDefault(ctx context.Context, job protocol.Job) (string, map[string]any, error) {
+	version, _ := job.Payload["version"].(string)
+	if err := ensureFnm(ctx); err != nil {
+		return "", nil, err
+	}
+	if err := applyNodeDefault(ctx, version); err != nil {
+		return "", nil, err
+	}
+	return "node default " + version, nil, nil
 }
 
 func handleRuntimeRemove(_ context.Context, job protocol.Job) (string, map[string]any, error) {

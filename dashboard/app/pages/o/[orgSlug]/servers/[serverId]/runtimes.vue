@@ -87,7 +87,7 @@ try {
   // defaults
 }
 
-async function trackInstall(runtime: RuntimeName, job: AgentJob) {
+async function trackJob(runtime: RuntimeName, job: AgentJob) {
   busy[runtime] = true
   activeJob.value = job
   try {
@@ -97,18 +97,23 @@ async function trackInstall(runtime: RuntimeName, job: AgentJob) {
       }
     })
     activeJob.value = done ?? null
-    const version = typeof done?.payload?.version === 'string' ? done.payload.version : ''
-    toast.add({
-      title: done?.status === 'succeeded'
-        ? (version ? `${runtime} ${version} installed` : `${runtime} installed`)
-        : 'Install failed',
-      description: done?.message || done?.status,
-      color: done?.status === 'succeeded' ? 'success' : 'error'
-    })
+    return done
   } finally {
     busy[runtime] = false
     await fetchAll(true)
   }
+}
+
+async function trackInstall(runtime: RuntimeName, job: AgentJob) {
+  const done = await trackJob(runtime, job)
+  const version = typeof done?.payload?.version === 'string' ? done.payload.version : ''
+  toast.add({
+    title: done?.status === 'succeeded'
+      ? (version ? `${runtime} ${version} installed` : `${runtime} installed`)
+      : 'Install failed',
+    description: done?.message || done?.status,
+    color: done?.status === 'succeeded' ? 'success' : 'error'
+  })
 }
 
 for (const runtime of ['php', 'node'] as RuntimeName[]) {
@@ -147,21 +152,24 @@ async function onSetDefault(runtime: RuntimeName, version: string) {
     return
   }
   busy[runtime] = true
+  activeJob.value = null
   try {
-    await setDefault(runtime, version)
-    await fetchAll(true)
+    const job = await setDefault(runtime, version)
+    const done = await trackJob(runtime, job)
     toast.add({
-      title: 'Default updated',
-      description: `${runtime.toUpperCase()} default is now ${version}`,
-      color: 'success'
+      title: done?.status === 'succeeded' ? 'Default updated' : 'Set default failed',
+      description: done?.status === 'succeeded'
+        ? `${runtime.toUpperCase()} ${version} is now the CLI default on the server`
+        : (done?.message || done?.status),
+      color: done?.status === 'succeeded' ? 'success' : 'error'
     })
   } catch (error) {
+    busy[runtime] = false
     const detail = error instanceof ApiError && error.data?.message
       ? String(error.data.message)
       : error instanceof Error ? error.message : 'Update failed'
     toast.add({ title: 'Update failed', description: detail, color: 'error' })
-  } finally {
-    busy[runtime] = false
+    await fetchAll(true)
   }
 }
 

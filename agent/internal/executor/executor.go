@@ -28,6 +28,8 @@ func Default() *Executor {
 		"server.provision":     handleServerProvision,
 		"runtime.php.install":  handleRuntimePHPInstall,
 		"runtime.node.install": handleRuntimeNodeInstall,
+		"runtime.php.default":  handleRuntimePHPDefault,
+		"runtime.node.default": handleRuntimeNodeDefault,
 		"runtime.php.remove":   handleRuntimeRemove,
 		"runtime.node.remove":  handleRuntimeRemove,
 	})

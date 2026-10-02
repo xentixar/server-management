@@ -63,8 +63,9 @@ Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
 |------|---------|----------|
 | `ping` | — | Health check (`pong`). |
 | `server.provision` | `php_versions[]`, `node_versions[]`, `addons{redis,mysql,mariadb,postgres}` | Ubuntu/Debian only: nginx, certbot, Composer, packages.sury.org multi-PHP, fnm Node, optional DB/cache. MySQL **or** MariaDB (not both). Creates managed DB user `sm`, disables password/`root` remote login (MySQL/MariaDB socket-only root; Postgres `postgres` password scrambled, not returned), Redis `requirepass`. Secrets returned once for UI reveal. |
-| `runtime.php.install` | `version` | Install one allowlisted PHP (8.1–8.5) + FPM. |
-| `runtime.node.install` | `version` | `fnm install` one allowlisted Node (18/20/22/24). |
+| `runtime.php.install` | `version`, `set_default?` | Install one allowlisted PHP (8.1–8.5) + FPM; optional `update-alternatives` for CLI `php`. |
+| `runtime.node.install` | `version`, `set_default?` | `fnm install`; links `node`/`npm` into `/usr/local/bin` when defaulting or if `node` missing. |
+| `runtime.php.default` / `runtime.node.default` | `version` | Apply CLI default on the host (`update-alternatives` / `fnm default` + symlinks). |
 | `runtime.php.remove` / `runtime.node.remove` | `version` | Reserved; currently fail closed. |
 
 Catalog (API): PHP `8.1`–`8.5`, Node `18`/`20`/`22`/`24`. Inventory on server: `{ php: { default, versions[{version,status}] }, node: {...}, addons[] }` with status `installed` \| `installing` \| `failed`.
