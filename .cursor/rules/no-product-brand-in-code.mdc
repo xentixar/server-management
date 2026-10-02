@@ -1,0 +1,21 @@
+---
+description: Do not hardcode product/brand names in host paths, unit names, or comments
+alwaysApply: true
+---
+
+# No product brand in code
+
+The product display name is not final and may change. Do **not** bake brand strings into:
+
+- Host filesystem paths (`/etc/cron.d/…`, supervisor conf names, log paths)
+- systemd / Supervisor program or unit names
+- Generated config file headers / “managed by …” comments
+- Default Unix usernames (use a stable technical id such as `sm`)
+
+Use neutral technical identifiers instead, for example:
+
+- Agent binary / service: `server-agent`
+- Managed resource prefix: `sa-` (programs), `/etc/cron.d/sa`
+- Managed Unix + DB user: `sm`
+
+Docs and UI copy may say the current product name. Runtime artifacts must stay brand-agnostic so a rename does not require host migrations.

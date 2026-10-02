@@ -34,6 +34,16 @@ const links = computed(() => {
     icon: 'i-lucide-boxes',
     to: ready ? `${base}/runtimes` : undefined,
     disabled: !ready
+  }, {
+    label: 'Services',
+    icon: 'i-lucide-cog',
+    to: ready ? `${base}/services` : undefined,
+    disabled: !ready
+  }, {
+    label: 'Cron',
+    icon: 'i-lucide-clock',
+    to: ready ? `${base}/cron` : undefined,
+    disabled: !ready
   }]] satisfies NavigationMenuItem[][]
 })
 
@@ -42,7 +52,12 @@ watch([() => route.path, provisioned], ([path, ready]) => {
     return
   }
   const prefix = orgHref(`/servers/${serverId.value}`)
-  if (path.startsWith(`${prefix}/sites`) || path.startsWith(`${prefix}/runtimes`)) {
+  if (
+    path.startsWith(`${prefix}/sites`)
+    || path.startsWith(`${prefix}/runtimes`)
+    || path.startsWith(`${prefix}/services`)
+    || path.startsWith(`${prefix}/cron`)
+  ) {
     navigateTo(prefix, { replace: true })
   }
 }, { immediate: true })

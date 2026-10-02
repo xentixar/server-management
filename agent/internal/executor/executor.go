@@ -32,6 +32,10 @@ func Default() *Executor {
 		"runtime.node.default": handleRuntimeNodeDefault,
 		"runtime.php.remove":   handleRuntimeRemove,
 		"runtime.node.remove":  handleRuntimeRemove,
+		"service.apply":        handleServiceApply,
+		"service.remove":       handleServiceRemove,
+		"service.control":      handleServiceControl,
+		"cron.sync":            handleCronSync,
 	})
 }
 
@@ -51,6 +55,7 @@ func (e *Executor) Run(ctx context.Context, job protocol.Job) protocol.JobResult
 			OK:       false,
 			Message:  err.Error(),
 			ExitCode: 1,
+			Secrets:  secrets,
 		}
 	}
 	return protocol.JobResultRequest{OK: true, Message: msg, Secrets: secrets}

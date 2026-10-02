@@ -73,8 +73,14 @@ func handleServerProvision(ctx context.Context, job protocol.Job) (string, map[s
 		}
 	}
 
-	var enabledAddons []string
 	secrets := map[string]any{}
+	sysCred, err := ensureManagedUser(ctx)
+	if err != nil {
+		return "", nil, fmt.Errorf("managed user: %w", err)
+	}
+	secrets["system"] = sysCred
+
+	var enabledAddons []string
 	for _, name := range []string{"redis", "mysql", "mariadb", "postgres"} {
 		if !addons[name] {
 			continue
@@ -97,10 +103,6 @@ func handleServerProvision(ctx context.Context, job protocol.Job) (string, map[s
 	_ = enableService(ctx, "nginx")
 	for _, ver := range phpList {
 		_ = enableService(ctx, "php"+ver+"-fpm")
-	}
-
-	if len(secrets) == 0 {
-		secrets = nil
 	}
 
 	return fmt.Sprintf(

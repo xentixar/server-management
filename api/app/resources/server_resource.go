@@ -43,6 +43,7 @@ func ServerResource(data models.Server) map[string]any {
 		"provision_status":      data.ProvisionStatus,
 		"provisioned_at":        provisionedAt,
 		"has_provision_secrets": data.HasProvisionSecrets(),
+		"managed_user":          data.ProcessUser(),
 		"runtimes":              runtimes,
 		"sites":                 0,
 		"created_at":            data.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),

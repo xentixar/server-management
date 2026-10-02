@@ -22,7 +22,7 @@ UI mapping: [dashboard/docs/DESIGN.md](../dashboard/docs/DESIGN.md).
 | Sites & stacks | Planned | |
 | Deployments & zero-downtime | Planned | |
 | Runtime & version management | Planned | |
-| Background services & cron | Planned | |
+| Background services & cron | Done | Supervisor + server-wide cron; site-scoped later |
 | Logs & observability | Planned | Metrics/alerts: **Future** |
 | Nginx & web server | Planned | |
 | Database manager | Planned | |
@@ -279,7 +279,7 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 ## 9. Background services & cron
 
-**Status:** Planned
+**Status:** Done (server-wide; site-scoped **Planned**)
 
 ### User goals
 
@@ -287,15 +287,19 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 ### Key actions
 
-- List services (Supervisor/systemd-backed **TBD**): name, status, command, auto-restart.
+- List services (Supervisor): name, status, command, auto-restart.
 - Start, stop, restart; view recent stdout/stderr.
 - Cron: CRUD entries with schedule validator, timezone, command, user context.
-- Scope: server-wide or site-specific (e.g. Laravel scheduler).
+- Scope: **server-wide** (site-specific e.g. Laravel scheduler — Planned).
 
 ### Notes for backend / agent
 
-- Agent validates cron expressions before write.
-- Service definitions stored in control plane; agent materializes config files.
+- Job kinds: `service.apply`, `service.remove`, `service.control`, `cron.sync`.
+- Agent installs Supervisor if missing; writes `/etc/supervisor/conf.d/sa-<name>.conf`.
+- Agent validates cron expressions before write; materializes `/etc/cron.d/sa`.
+- Provision creates managed Unix user `sm` (sudo); password revealed once with addon secrets. Services/cron default to that user.
+- Service/cron definitions stored in control plane; agent materializes config files.
+- API gates with `organization.servers.view` / `update` (same as runtimes).
 
 ---
 

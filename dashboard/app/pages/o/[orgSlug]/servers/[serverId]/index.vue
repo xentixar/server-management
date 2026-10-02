@@ -43,13 +43,54 @@ const secretsOpen = ref(false)
 const secrets = ref<Record<string, Record<string, string>> | null>(null)
 const secretsLoading = ref(false)
 
+const SECRET_ORDER = ['system', 'mysql', 'mariadb', 'postgres', 'redis']
+
+const SECRET_SERVICE_LABELS: Record<string, string> = {
+  system: 'System user',
+  mysql: 'MySQL',
+  mariadb: 'MariaDB',
+  postgres: 'PostgreSQL',
+  redis: 'Redis'
+}
+
+const SECRET_FIELD_LABELS: Record<string, string> = {
+  user: 'User',
+  password: 'Password',
+  host: 'Host',
+  port: 'Port'
+}
+
+const SECRET_SERVICE_ICONS: Record<string, string> = {
+  system: 'i-lucide-user-round-cog',
+  mysql: 'i-lucide-database',
+  mariadb: 'i-lucide-database',
+  postgres: 'i-lucide-database',
+  redis: 'i-lucide-database-zap'
+}
+
 const secretRows = computed(() => {
   if (!secrets.value) {
     return []
   }
-  return Object.entries(secrets.value).map(([service, fields]) => ({
+  const entries = Object.entries(secrets.value)
+  entries.sort(([a], [b]) => {
+    const ai = SECRET_ORDER.indexOf(a)
+    const bi = SECRET_ORDER.indexOf(b)
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+  })
+  return entries.map(([service, fields]) => ({
     service,
-    fields: Object.entries(fields).map(([key, value]) => ({ key, value }))
+    label: SECRET_SERVICE_LABELS[service] || service,
+    icon: SECRET_SERVICE_ICONS[service] || 'i-lucide-key-round',
+    hint: service === 'system'
+      ? 'Login and sudo password for the managed account'
+      : 'Generated during stack provision',
+    fields: Object.entries(fields).map(([key, value]) => ({
+      key,
+      label: SECRET_FIELD_LABELS[key] || key,
+      value,
+      secret: key === 'password'
+    }))
   }))
 })
 
@@ -519,8 +560,8 @@ async function onProvision() {
         color="warning"
         variant="subtle"
         icon="i-lucide-key-round"
-        title="Addon credentials waiting"
-        description="Save the generated database passwords now. They are cleared after you dismiss this."
+        title="Credentials waiting"
+        description="Save the system user (sudo) password and any database passwords now. They are cleared after you dismiss this."
       >
         <template #actions>
           <UButton
@@ -564,58 +605,103 @@ async function onProvision() {
 
     <UModal
       v-model:open="secretsOpen"
-      title="Save addon credentials"
-      description="Generated during provision. Copy them now — dismiss clears them from the control plane."
+      :ui="{ content: 'sm:max-w-4xl' }"
     >
-      <template #body>
-        <div class="flex flex-col gap-4">
-          <UAlert
-            color="warning"
-            variant="subtle"
-            icon="i-lucide-triangle-alert"
-            title="One-time reveal"
-            description="After you dismiss, these passwords are not shown again. Reset them on the server if you lose them."
-          />
-          <div
-            v-for="row in secretRows"
-            :key="row.service"
-            class="border-default rounded-md border px-3 py-2"
-          >
-            <p class="text-highlighted text-xs font-semibold tracking-wide uppercase">
-              {{ row.service }}
-            </p>
-            <div
-              v-for="field in row.fields"
-              :key="field.key"
-              class="mt-2 flex items-center justify-between gap-2"
-            >
-              <div class="min-w-0">
-                <p class="text-muted text-xs">
-                  {{ field.key }}
-                </p>
-                <p class="text-highlighted truncate font-mono text-sm">
-                  {{ field.value }}
-                </p>
-              </div>
-              <UButton
-                icon="i-lucide-copy"
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                aria-label="Copy"
-                @click="copySecret(field.value)"
+      <template #content>
+        <!-- min-h-0 on the scroll child so flex max-height actually scrolls instead of clipping mid-row -->
+        <div class="flex max-h-[85vh] flex-col overflow-hidden">
+          <div class="border-default flex shrink-0 items-start justify-between gap-3 border-b px-5 py-4">
+            <div class="min-w-0">
+              <p class="text-highlighted text-base font-semibold">
+                Save provision credentials
+              </p>
+              <p class="text-muted mt-1 text-sm leading-relaxed">
+                Copy the system user and addon passwords now. Dismissing clears them from the control plane.
+              </p>
+            </div>
+            <UButton
+              icon="i-lucide-x"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              class="shrink-0"
+              aria-label="Close"
+              @click="secretsOpen = false"
+            />
+          </div>
+
+          <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
+            <div class="bg-warning/10 text-warning flex gap-2.5 rounded-lg px-3 py-2.5 text-sm">
+              <UIcon
+                name="i-lucide-triangle-alert"
+                class="mt-0.5 size-4 shrink-0"
               />
+              <p>
+                <span class="font-medium">One-time reveal.</span>
+                After you dismiss, these passwords are not shown again.
+              </p>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <section
+                v-for="row in secretRows"
+                :key="row.service"
+                class="border-default flex h-full flex-col rounded-lg border"
+              >
+                <div class="bg-elevated/50 flex items-center gap-2.5 px-3.5 py-2.5">
+                  <div class="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
+                    <UIcon
+                      :name="row.icon"
+                      class="size-4"
+                    />
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-highlighted text-sm font-semibold">
+                      {{ row.label }}
+                    </p>
+                    <p class="text-muted text-xs">
+                      {{ row.hint }}
+                    </p>
+                  </div>
+                </div>
+                <ul class="divide-default divide-y">
+                  <li
+                    v-for="field in row.fields"
+                    :key="field.key"
+                    class="flex items-center gap-3 px-3.5 py-2.5"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <p class="text-muted text-xs">
+                        {{ field.label }}
+                      </p>
+                      <p
+                        class="text-highlighted mt-0.5 truncate font-mono text-sm"
+                        :class="field.secret ? 'tracking-wide' : ''"
+                      >
+                        {{ field.value }}
+                      </p>
+                    </div>
+                    <UButton
+                      icon="i-lucide-copy"
+                      color="neutral"
+                      variant="soft"
+                      size="xs"
+                      :aria-label="`Copy ${field.label}`"
+                      @click="copySecret(field.value)"
+                    />
+                  </li>
+                </ul>
+              </section>
             </div>
           </div>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex w-full justify-end gap-2">
-          <UButton
-            label="I've saved these"
-            color="primary"
-            @click="onDismissSecrets"
-          />
+
+          <div class="border-default flex shrink-0 justify-end gap-2 border-t px-5 py-3">
+            <UButton
+              label="I've saved these"
+              color="primary"
+              @click="onDismissSecrets"
+            />
+          </div>
         </div>
       </template>
     </UModal>

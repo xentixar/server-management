@@ -15,4 +15,9 @@ const (
 	JobKindRuntimeNodeDefault = "runtime.node.default"
 	JobKindRuntimePHPRemove   = "runtime.php.remove"
 	JobKindRuntimeNodeRemove  = "runtime.node.remove"
+
+	JobKindServiceApply   = "service.apply"
+	JobKindServiceRemove  = "service.remove"
+	JobKindServiceControl = "service.control"
+	JobKindCronSync       = "cron.sync"
 )

@@ -325,6 +325,8 @@ func (ServerController) Delete(ctx *gin.Context) {
 	)
 	cleanup := provision.UninstallAgent(target)
 	_ = (models.AgentJob{}).DeleteForServer(ctx, server.ID)
+	_ = (models.ServerService{}).DeleteForServer(ctx, server.ID)
+	_ = (models.ServerCron{}).DeleteForServer(ctx, server.ID)
 
 	if err := server.Delete(ctx); err != nil {
 		respond(ctx).fail("Failed to delete server", gin.H{}, 500)

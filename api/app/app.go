@@ -32,6 +32,8 @@ func Initialize() {
 		&models.OrganizationMemberInvite{},
 		&models.Server{},
 		&models.AgentJob{},
+		&models.ServerService{},
+		&models.ServerCron{},
 	)
 	_ = (models.AgentJob{}).BackfillUIDs()
 }

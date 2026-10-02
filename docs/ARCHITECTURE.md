@@ -115,8 +115,8 @@ The agent will maintain **desired state** from the control plane:
 | Heartbeat / jobs | Poll, `ping` handler | Done |
 | Deploy | Clone/build, release swap | Planned |
 | Nginx | Render vhost, reload | Planned |
-| Runtimes | Install Node/PHP | Planned |
-| Cron / services | Config + reload | Planned |
+| Runtimes | Install Node/PHP | Done |
+| Cron / services | Supervisor + `/etc/cron.d/sa` | Done (server-wide) |
 | Logs | Tail → API | Planned |
 | Firewall | Apply rules | TBD |
 

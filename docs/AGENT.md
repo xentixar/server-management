@@ -59,22 +59,26 @@ Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
 |------|------|--------|
 | Heartbeat | `POST /api/v1/agent/heartbeat` | Body: `protocol_version`, `agent_version`, `hostname`. Response bare JSON: `{ ok, protocol_version }` (not the usual `{success,data}` envelope). API marks the server online and stamps `last_seen_at`; list/get derive `online` (≤45s) / `degraded` (≤2m) / `offline` from that stamp so a stopped host does not stay green. |
 | Next job | `GET /api/v1/agent/jobs/next` | `204` if none; else `{ id, kind, payload }` (`id` is an opaque UUID). |
-| Result | `POST /api/v1/agent/jobs/:id/result` | `{ ok, message, exit_code, secrets? }`. `secrets` carries one-time addon credentials after provision. |
+| Result | `POST /api/v1/agent/jobs/:id/result` | `{ ok, message, exit_code, secrets? }`. `secrets` carries one-time addon credentials after provision, or service `status` / log tails after service jobs. |
 
 ### Job kinds
 
 | Kind | Payload | Behavior |
 |------|---------|----------|
 | `ping` | — | Health check (`pong`). |
-| `server.provision` | `php_versions[]`, `node_versions[]`, `addons{redis,mysql,mariadb,postgres}` | Ubuntu/Debian only: nginx, certbot, Composer, packages.sury.org multi-PHP, fnm Node, optional DB/cache. MySQL **or** MariaDB (not both). Creates managed DB user `sm`, disables password/`root` remote login (MySQL/MariaDB socket-only root; Postgres `postgres` password scrambled, not returned), Redis `requirepass`. Secrets returned once for UI reveal. |
+| `server.provision` | `php_versions[]`, `node_versions[]`, `addons{redis,mysql,mariadb,postgres}` | Ubuntu/Debian only: nginx, certbot, Composer, packages.sury.org multi-PHP, fnm Node, optional DB/cache. Creates managed Unix user `sm` (sudo group) and returns `system.{user,password}` once. MySQL **or** MariaDB (not both). Creates managed DB user `sm`, disables password/`root` remote login (MySQL/MariaDB socket-only root; Postgres `postgres` password scrambled, not returned), Redis `requirepass`. Secrets returned once for UI reveal. |
 | `runtime.php.install` | `version`, `set_default?` | Install one allowlisted PHP (8.1–8.5) + FPM; optional `update-alternatives` for CLI `php`. |
 | `runtime.node.install` | `version`, `set_default?` | `fnm install`; links `node`/`npm` into `/usr/local/bin` when defaulting or if `node` missing. |
 | `runtime.php.default` / `runtime.node.default` | `version` | Apply CLI default on the host (`update-alternatives` / `fnm default` + symlinks). |
 | `runtime.php.remove` / `runtime.node.remove` | `version` | Reserved; currently fail closed. |
+| `service.apply` | `uid`, `name`, `command`, `directory?`, `user`, `processes`, `auto_restart`, `autostart`, `enabled` | Ensure Supervisor; write `/etc/supervisor/conf.d/sa-<name>.conf`; `reread`/`update`; start or stop; return status + log tails via `secrets`. Default process user is managed `sm`. |
+| `service.remove` | `uid`, `name` | Stop program; delete conf; `reread`/`update`. |
+| `service.control` | `uid`, `name`, `action` (`start`\|`stop`\|`restart`\|`status`) | `supervisorctl` action; return status + stdout/stderr tails. |
+| `cron.sync` | `entries[{uid,schedule,command,user,timezone,enabled}]` | Validate 5-field schedules; rewrite `/etc/cron.d/sa` (with `CRON_TZ` per entry). |
 
 Catalog (API): PHP `8.1`–`8.5`, Node `18`/`20`/`22`/`24`. Inventory on server: `{ php: { default, versions[{version,status}] }, node: {...}, addons[] }` with status `installed` \| `installing` \| `failed`.
 
-Org routes (JWT): `POST .../servers/:id/provision`, `GET/POST .../runtimes`, `GET .../runtimes/catalog`, `PATCH .../runtimes/default`, `GET .../jobs/:job`.
+Org routes (JWT): `POST .../servers/:id/provision`, `GET/POST .../runtimes`, `GET .../runtimes/catalog`, `PATCH .../runtimes/default`, `GET/POST/PATCH/DELETE .../services`, `POST .../services/:id/control`, `GET/POST/PATCH/DELETE .../crons`, `GET .../jobs/:job`.
 
 Agent package layout:
 
@@ -85,7 +89,7 @@ agent/
   internal/protocol/      # wire types + version
   internal/client/        # HTTP
   internal/loop/          # heartbeat + poll
-  internal/executor/      # job handlers (ping, provision, runtimes)
+  internal/executor/      # job handlers (ping, provision, runtimes, services, cron)
 ```
 
 Add capabilities by registering handlers in `executor` (fail closed for unknown kinds). Rebuild/redeploy the agent binary after new kinds land.

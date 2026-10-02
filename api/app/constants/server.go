@@ -29,6 +29,25 @@ const (
 	AddonMySQL    = "mysql"
 	AddonMariaDB  = "mariadb"
 	AddonPostgres = "postgres"
+
+	ServiceStatusPending = "pending"
+	ServiceStatusRunning = "running"
+	ServiceStatusStopped = "stopped"
+	ServiceStatusFailed  = "failed"
+	ServiceStatusUnknown = "unknown"
+
+	ServiceControlStart   = "start"
+	ServiceControlStop    = "stop"
+	ServiceControlRestart = "restart"
+	ServiceControlStatus  = "status"
+
+	CronStatusPending = "pending"
+	CronStatusSynced  = "synced"
+	CronStatusFailed  = "failed"
+
+	// DefaultProcessUser is the managed non-root Unix account created at provision (not a product brand).
+	DefaultProcessUser = "sm"
+	DefaultCronTZ      = "UTC"
 )
 
 var authMethods = map[string]struct{}{
@@ -86,4 +105,40 @@ func IsAllowedNodeVersion(version string) bool {
 		}
 	}
 	return false
+}
+
+var serviceStatuses = map[string]struct{}{
+	ServiceStatusPending: {},
+	ServiceStatusRunning: {},
+	ServiceStatusStopped: {},
+	ServiceStatusFailed:  {},
+	ServiceStatusUnknown: {},
+}
+
+var serviceControls = map[string]struct{}{
+	ServiceControlStart:   {},
+	ServiceControlStop:    {},
+	ServiceControlRestart: {},
+	ServiceControlStatus:  {},
+}
+
+var cronStatuses = map[string]struct{}{
+	CronStatusPending: {},
+	CronStatusSynced:  {},
+	CronStatusFailed:  {},
+}
+
+func IsValidServiceStatus(status string) bool {
+	_, ok := serviceStatuses[status]
+	return ok
+}
+
+func IsValidServiceControl(action string) bool {
+	_, ok := serviceControls[action]
+	return ok
+}
+
+func IsValidCronStatus(status string) bool {
+	_, ok := cronStatuses[status]
+	return ok
 }

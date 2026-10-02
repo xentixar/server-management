@@ -7,6 +7,22 @@ import (
 	"api/app/constants"
 )
 
+func managedUserFromSecrets(secrets map[string]any) string {
+	raw, ok := secrets["system"]
+	if !ok || raw == nil {
+		return ""
+	}
+	switch m := raw.(type) {
+	case map[string]any:
+		if u, _ := m["user"].(string); u != "" {
+			return u
+		}
+	case map[string]string:
+		return m["user"]
+	}
+	return ""
+}
+
 func stringSliceFromPayload(payload map[string]any, key string) []string {
 	raw, ok := payload[key]
 	if !ok || raw == nil {
@@ -89,6 +105,12 @@ func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool, secr
 			s.ProvisionedAt = &now
 			if len(secrets) > 0 {
 				s.ProvisionSecrets = secrets
+				if u := managedUserFromSecrets(secrets); u != "" {
+					s.ManagedUser = u
+				}
+			}
+			if s.ManagedUser == "" {
+				s.ManagedUser = constants.DefaultProcessUser
 			}
 		} else {
 			s.ProvisionStatus = constants.ProvisionStatusFailed
@@ -149,6 +171,9 @@ func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool, secr
 		}
 		family.Remove(version)
 		return s.SaveProvision(ctx)
+
+	case constants.JobKindServiceApply, constants.JobKindServiceRemove, constants.JobKindServiceControl, constants.JobKindCronSync:
+		return ApplyProcessJobResult(ctx, job, ok, secrets)
 	}
 
 	return nil

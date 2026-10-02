@@ -32,6 +32,7 @@ type Server struct {
 	LastSeenAt           *time.Time
 	ProvisionStatus      string `gorm:"type:varchar(20);not null;default:none"`
 	ProvisionedAt        *time.Time
+	ManagedUser          string         `gorm:"type:varchar(64)"` // non-root deploy user (username only)
 	Runtimes             ServerRuntimes `gorm:"serializer:json"`
 	ProvisionSecrets     map[string]any `gorm:"serializer:json"`
 
@@ -150,8 +151,15 @@ func (s *Server) SaveProvision(ctx context.Context) error {
 	// Select+struct Updates so serializer:json runs (map[string]any skips it).
 	return config.GetDatabase().WithContext(ctx).
 		Model(s).
-		Select("ProvisionStatus", "ProvisionedAt", "Runtimes", "ProvisionSecrets").
+		Select("ProvisionStatus", "ProvisionedAt", "ManagedUser", "Runtimes", "ProvisionSecrets").
 		Updates(s).Error
+}
+
+func (s Server) ProcessUser() string {
+	if s.ManagedUser != "" {
+		return s.ManagedUser
+	}
+	return constants.DefaultProcessUser
 }
 
 func (s *Server) ClearProvisionSecrets(ctx context.Context) error {

@@ -1,0 +1,22 @@
+---
+description: Do not use em dashes or en dashes in UI copy or user-facing strings
+alwaysApply: true
+---
+
+# No em dash / en dash
+
+Do **not** use em dashes (`—` U+2014) or en dashes (`–` U+2013) in:
+
+- Dashboard UI strings (labels, titles, descriptions, toasts, placeholders)
+- User-facing API error messages
+- Comments that may be copied into UI
+
+Use a normal hyphen (`-`), a comma, a period, or rephrase instead.
+
+```text
+Bad:  Copy them now — dismiss clears them.
+Good: Copy them now. Dismiss clears them.
+Good: Copy them now - dismiss clears them.
+```
+
+Existing docs/markdown timelines may keep dashes until touched; new UI copy must not introduce them.

@@ -117,10 +117,17 @@ func (AgentJob) FindByPublicID(ctx context.Context, publicID string, serverID ui
 }
 
 func (AgentJob) HasOpen(ctx context.Context, serverID uint, kind string) (bool, error) {
+	return (AgentJob{}).HasOpenKinds(ctx, serverID, kind)
+}
+
+func (AgentJob) HasOpenKinds(ctx context.Context, serverID uint, kinds ...string) (bool, error) {
+	if len(kinds) == 0 {
+		return false, nil
+	}
 	var count int64
 	err := config.GetDatabase().WithContext(ctx).
 		Model(&AgentJob{}).
-		Where("server_id = ? AND kind = ? AND status IN ?", serverID, kind, []string{
+		Where("server_id = ? AND kind IN ? AND status IN ?", serverID, kinds, []string{
 			constants.JobStatusPending,
 			constants.JobStatusRunning,
 		}).
