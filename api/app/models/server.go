@@ -33,6 +33,7 @@ type Server struct {
 	ProvisionStatus      string `gorm:"type:varchar(20);not null;default:none"`
 	ProvisionedAt        *time.Time
 	Runtimes             ServerRuntimes `gorm:"serializer:json"`
+	ProvisionSecrets     map[string]any `gorm:"serializer:json"`
 
 	Organization Organization `gorm:"foreignKey:OrganizationID"`
 }
@@ -130,8 +131,19 @@ func (s *Server) SaveProvision(ctx context.Context) error {
 	// Select+struct Updates so serializer:json runs (map[string]any skips it).
 	return config.GetDatabase().WithContext(ctx).
 		Model(s).
-		Select("ProvisionStatus", "ProvisionedAt", "Runtimes").
+		Select("ProvisionStatus", "ProvisionedAt", "Runtimes", "ProvisionSecrets").
 		Updates(s).Error
+}
+
+func (s *Server) ClearProvisionSecrets(ctx context.Context) error {
+	s.ProvisionSecrets = nil
+	return config.GetDatabase().WithContext(ctx).
+		Model(s).
+		Update("provision_secrets", nil).Error
+}
+
+func (s *Server) HasProvisionSecrets() bool {
+	return len(s.ProvisionSecrets) > 0
 }
 
 func (s *Server) Delete(ctx context.Context) error {

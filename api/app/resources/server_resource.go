@@ -40,11 +40,12 @@ func ServerResource(data models.Server) map[string]any {
 		"agent":            data.AgentStatus,
 		"agent_version":    data.AgentVersion,
 		"last_seen_at":     lastSeenAt,
-		"provision_status": data.ProvisionStatus,
-		"provisioned_at":   provisionedAt,
-		"runtimes":         runtimes,
-		"sites":            0,
-		"created_at":       data.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"provision_status":      data.ProvisionStatus,
+		"provisioned_at":        provisionedAt,
+		"has_provision_secrets": data.HasProvisionSecrets(),
+		"runtimes":              runtimes,
+		"sites":                 0,
+		"created_at":            data.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
 

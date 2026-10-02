@@ -98,6 +98,7 @@ func (ServerController) Provision(ctx *gin.Context) {
 		respond(ctx).fail("Failed to update server", gin.H{}, http.StatusInternalServerError)
 		return
 	}
+	_ = server.ClearProvisionSecrets(ctx)
 
 	job, err := (models.AgentJob{}).Enqueue(ctx, server.ID, constants.JobKindServerProvision, payload)
 	if err != nil {
@@ -251,6 +252,30 @@ func (ServerController) SetRuntimeDefault(ctx *gin.Context) {
 	}
 
 	respond(ctx).ok("Default runtime updated", server.Runtimes, http.StatusOK)
+}
+
+func (ServerController) GetProvisionSecrets(ctx *gin.Context) {
+	server, ok := loadServerForView(ctx)
+	if !ok {
+		return
+	}
+	if !server.HasProvisionSecrets() {
+		respond(ctx).fail("No provision secrets available", gin.H{}, http.StatusNotFound)
+		return
+	}
+	respond(ctx).ok("Provision secrets", server.ProvisionSecrets, http.StatusOK)
+}
+
+func (ServerController) DismissProvisionSecrets(ctx *gin.Context) {
+	server, ok := loadServerForUpdate(ctx)
+	if !ok {
+		return
+	}
+	if err := server.ClearProvisionSecrets(ctx); err != nil {
+		respond(ctx).fail("Failed to dismiss secrets", gin.H{}, http.StatusInternalServerError)
+		return
+	}
+	respond(ctx).ok("Provision secrets dismissed", gin.H{}, http.StatusOK)
 }
 
 func (ServerController) GetLatestJob(ctx *gin.Context) {

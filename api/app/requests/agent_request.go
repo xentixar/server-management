@@ -7,7 +7,8 @@ type AgentHeartbeatRequest struct {
 }
 
 type AgentJobResultRequest struct {
-	OK       bool   `json:"ok"`
-	Message  string `json:"message"`
-	ExitCode int    `json:"exit_code"`
+	OK       bool           `json:"ok"`
+	Message  string         `json:"message"`
+	ExitCode int            `json:"exit_code"`
+	Secrets  map[string]any `json:"secrets"`
 }

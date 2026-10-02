@@ -8,9 +8,9 @@ import (
 	"agent/internal/protocol"
 )
 
-func handleServerProvision(ctx context.Context, job protocol.Job) (string, error) {
+func handleServerProvision(ctx context.Context, job protocol.Job) (string, map[string]any, error) {
 	if !hasCommand("apt-get") {
-		return "", fmt.Errorf("ubuntu/debian apt-get required")
+		return "", nil, fmt.Errorf("ubuntu/debian apt-get required")
 	}
 
 	phpList := payloadStringSlice(job.Payload, "php_versions")
@@ -18,64 +18,70 @@ func handleServerProvision(ctx context.Context, job protocol.Job) (string, error
 	addons := payloadBoolMap(job.Payload, "addons")
 
 	if len(phpList) == 0 {
-		return "", fmt.Errorf("php_versions required")
+		return "", nil, fmt.Errorf("php_versions required")
 	}
 	if len(nodeList) == 0 {
-		return "", fmt.Errorf("node_versions required")
+		return "", nil, fmt.Errorf("node_versions required")
 	}
 	if addons["mysql"] && addons["mariadb"] {
-		return "", fmt.Errorf("mysql and mariadb are mutually exclusive")
+		return "", nil, fmt.Errorf("mysql and mariadb are mutually exclusive")
 	}
 
 	env := "DEBIAN_FRONTEND=noninteractive"
 	if _, err := runShell(ctx, env+" apt-get update -y"); err != nil {
-		return "", err
+		return "", nil, err
 	}
 	if _, err := runShell(ctx, env+" apt-get install -y "+strings.Join(basePackages, " ")); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	if err := ensureSuryPHP(ctx); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	var phpPkgs []string
 	for _, ver := range phpList {
 		pkgs, err := phpPackages(ver)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 		phpPkgs = append(phpPkgs, pkgs...)
 	}
 	if _, err := runShell(ctx, env+" apt-get install -y "+strings.Join(phpPkgs, " ")); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	if err := installComposer(ctx); err != nil {
-		return "", err
+		return "", nil, err
 	}
 	if err := ensureFnm(ctx); err != nil {
-		return "", err
+		return "", nil, err
 	}
 	for _, ver := range nodeList {
 		if err := installNodeVersion(ctx, ver); err != nil {
-			return "", err
+			return "", nil, err
 		}
 	}
 
 	var enabledAddons []string
+	secrets := map[string]any{}
 	for _, name := range []string{"redis", "mysql", "mariadb", "postgres"} {
 		if !addons[name] {
 			continue
 		}
 		pkgs := addonPackages[name]
 		if _, err := runShell(ctx, env+" apt-get install -y "+strings.Join(pkgs, " ")); err != nil {
-			return "", err
+			return "", nil, err
 		}
-		enabledAddons = append(enabledAddons, name)
 		if unit := addonServices[name]; unit != "" {
 			_ = enableService(ctx, unit)
 		}
+		cred, err := configureAddon(ctx, name)
+		if err != nil {
+			return "", nil, fmt.Errorf("%s credentials: %w", name, err)
+		}
+		secrets[name] = cred
+		enabledAddons = append(enabledAddons, name)
 	}
 
 	_ = enableService(ctx, "nginx")
@@ -83,12 +89,16 @@ func handleServerProvision(ctx context.Context, job protocol.Job) (string, error
 		_ = enableService(ctx, "php"+ver+"-fpm")
 	}
 
+	if len(secrets) == 0 {
+		secrets = nil
+	}
+
 	return fmt.Sprintf(
 		"provisioned php=%s node=%s addons=%s",
 		strings.Join(phpList, ","),
 		strings.Join(nodeList, ","),
 		strings.Join(enabledAddons, ","),
-	), nil
+	), secrets, nil
 }
 
 // ensureSuryPHP adds packages.sury.org (works on Debian + Ubuntu; no software-properties-common).

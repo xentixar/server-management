@@ -55,14 +55,14 @@ Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
 |------|------|--------|
 | Heartbeat | `POST /api/v1/agent/heartbeat` | Body: `protocol_version`, `agent_version`, `hostname`. Response bare JSON: `{ ok, protocol_version }` (not the usual `{success,data}` envelope). |
 | Next job | `GET /api/v1/agent/jobs/next` | `204` if none; else `{ id, kind, payload }`. |
-| Result | `POST /api/v1/agent/jobs/:id/result` | `{ ok, message, exit_code }`. |
+| Result | `POST /api/v1/agent/jobs/:id/result` | `{ ok, message, exit_code, secrets? }`. `secrets` carries one-time addon credentials after provision. |
 
 ### Job kinds
 
 | Kind | Payload | Behavior |
 |------|---------|----------|
 | `ping` | — | Health check (`pong`). |
-| `server.provision` | `php_versions[]`, `node_versions[]`, `addons{redis,mysql,mariadb,postgres}` | Ubuntu/Debian only: nginx, certbot, Composer, packages.sury.org multi-PHP, fnm Node, optional DB/cache. |
+| `server.provision` | `php_versions[]`, `node_versions[]`, `addons{redis,mysql,mariadb,postgres}` | Ubuntu/Debian only: nginx, certbot, Composer, packages.sury.org multi-PHP, fnm Node, optional DB/cache. MySQL **or** MariaDB (not both). Creates managed DB user `sm`, disables password/`root` remote login (MySQL/MariaDB socket-only root; Postgres `postgres` password scrambled, not returned), Redis `requirepass`. Secrets returned once for UI reveal. |
 | `runtime.php.install` | `version` | Install one allowlisted PHP (8.1–8.5) + FPM. |
 | `runtime.node.install` | `version` | `fnm install` one allowlisted Node (18/20/22/24). |
 | `runtime.php.remove` / `runtime.node.remove` | `version` | Reserved; currently fail closed. |

@@ -25,7 +25,8 @@ type Job struct {
 }
 
 type JobResultRequest struct {
-	OK       bool   `json:"ok"`
-	Message  string `json:"message,omitempty"`
-	ExitCode int    `json:"exit_code,omitempty"`
+	OK       bool           `json:"ok"`
+	Message  string         `json:"message,omitempty"`
+	ExitCode int            `json:"exit_code,omitempty"`
+	Secrets  map[string]any `json:"secrets,omitempty"`
 }

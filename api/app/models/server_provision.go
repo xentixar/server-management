@@ -62,7 +62,7 @@ func (s *Server) ApplyJobClaim(ctx context.Context, job AgentJob) error {
 	return nil
 }
 
-func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool) error {
+func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool, secrets map[string]any) error {
 	s.Runtimes.Normalize()
 
 	switch job.Kind {
@@ -87,6 +87,9 @@ func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool) erro
 			s.ProvisionStatus = constants.ProvisionStatusReady
 			now := time.Now().UTC()
 			s.ProvisionedAt = &now
+			if len(secrets) > 0 {
+				s.ProvisionSecrets = secrets
+			}
 		} else {
 			s.ProvisionStatus = constants.ProvisionStatusFailed
 		}

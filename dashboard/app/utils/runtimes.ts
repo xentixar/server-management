@@ -150,7 +150,6 @@ export const DEFAULT_NODE_VERSIONS = ['20', '22', '24']
 
 export const ADDON_OPTIONS = [
   { key: 'redis' as const, label: 'Redis' },
-  { key: 'mysql' as const, label: 'MySQL' },
   { key: 'mariadb' as const, label: 'MariaDB' },
   { key: 'postgres' as const, label: 'PostgreSQL' }
 ]

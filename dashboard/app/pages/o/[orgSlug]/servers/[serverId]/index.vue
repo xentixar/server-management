@@ -24,6 +24,8 @@ const {
   provision,
   getCatalog,
   getLatestJob,
+  getProvisionSecrets,
+  dismissProvisionSecrets,
   pollJob
 } = useServerRuntimes(serverId)
 
@@ -34,6 +36,64 @@ const bootstrapping = ref(false)
 const provisioning = ref(false)
 const activeJob = ref<AgentJob | null>(null)
 const catalog = ref<RuntimeCatalog>({ php: DEFAULT_PHP_VERSIONS, node: DEFAULT_NODE_VERSIONS })
+const secretsOpen = ref(false)
+const secrets = ref<Record<string, Record<string, string>> | null>(null)
+const secretsLoading = ref(false)
+
+const secretRows = computed(() => {
+  if (!secrets.value) {
+    return []
+  }
+  return Object.entries(secrets.value).map(([service, fields]) => ({
+    service,
+    fields: Object.entries(fields).map(([key, value]) => ({ key, value }))
+  }))
+})
+
+async function revealSecrets() {
+  secretsLoading.value = true
+  try {
+    secrets.value = await getProvisionSecrets()
+    secretsOpen.value = true
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 404)) {
+      toast.add({
+        title: 'Could not load credentials',
+        description: error instanceof Error ? error.message : undefined,
+        color: 'error'
+      })
+    }
+  } finally {
+    secretsLoading.value = false
+  }
+}
+
+async function onDismissSecrets() {
+  try {
+    await dismissProvisionSecrets()
+    secretsOpen.value = false
+    secrets.value = null
+    await fetchAll(true)
+  } catch (error) {
+    toast.add({
+      title: 'Could not dismiss credentials',
+      description: error instanceof Error ? error.message : undefined,
+      color: 'error'
+    })
+  }
+}
+
+async function maybeRevealSecrets() {
+  await fetchAll(true)
+  if (server.value?.hasProvisionSecrets) {
+    await revealSecrets()
+  }
+}
+
+function copySecret(value: string) {
+  navigator.clipboard?.writeText(value)
+  toast.add({ title: 'Copied', color: 'success' })
+}
 
 function applyJob(job: AgentJob | null | undefined) {
   activeJob.value = job ?? null
@@ -109,17 +169,6 @@ const provisionLabel = computed(() => {
   return 'Provision server'
 })
 
-watch(() => addons.mysql, (on) => {
-  if (on) {
-    addons.mariadb = false
-  }
-})
-watch(() => addons.mariadb, (on) => {
-  if (on) {
-    addons.mysql = false
-  }
-})
-
 if (server.value?.agent === 'online') {
   try {
     catalog.value = await getCatalog()
@@ -136,10 +185,11 @@ if (latest) {
     provisioning.value = true
     pollJob(latest.id, {
       onTick: applyJob
-    }).then((done) => {
+    }).then(async (done) => {
       applyJob(done)
       if (done?.status === 'succeeded') {
         toast.add({ title: 'Server provisioned', description: done.message, color: 'success' })
+        await maybeRevealSecrets()
       } else if (done?.status === 'failed') {
         toast.add({ title: 'Provision failed', description: done.message || done.status, color: 'error' })
       }
@@ -147,6 +197,8 @@ if (latest) {
       provisioning.value = false
       await fetchAll(true)
     })
+  } else if (server.value?.hasProvisionSecrets) {
+    await revealSecrets()
   }
 }
 
@@ -224,6 +276,9 @@ async function onProvision() {
       description: done?.message || done?.status,
       color: done?.status === 'succeeded' ? 'success' : 'error'
     })
+    if (done?.status === 'succeeded') {
+      await maybeRevealSecrets()
+    }
   } catch (error) {
     const detail = error instanceof ApiError && error.data?.message
       ? String(error.data.message)
@@ -397,7 +452,7 @@ async function onProvision() {
           />
         </div>
         <p class="text-muted mt-1 text-xs">
-          MySQL and MariaDB are mutually exclusive.
+          MariaDB covers MySQL-compatible apps.
         </p>
       </div>
 
@@ -418,6 +473,25 @@ async function onProvision() {
         title="Provision failed"
         :description="activeJob.message"
       />
+      <UAlert
+        v-if="server.hasProvisionSecrets && !secretsOpen"
+        color="warning"
+        variant="subtle"
+        icon="i-lucide-key-round"
+        title="Addon credentials waiting"
+        description="Save the generated database passwords now. They are cleared after you dismiss this."
+      >
+        <template #actions>
+          <UButton
+            label="Show credentials"
+            size="sm"
+            color="neutral"
+            variant="outline"
+            :loading="secretsLoading"
+            @click="revealSecrets"
+          />
+        </template>
+      </UAlert>
 
       <p
         v-if="server.provisionStatus === 'ready'"
@@ -460,5 +534,63 @@ async function onProvision() {
         {{ server.notes }}
       </p>
     </section>
+
+    <UModal
+      v-model:open="secretsOpen"
+      title="Save addon credentials"
+      description="Generated during provision. Copy them now — dismiss clears them from the control plane."
+    >
+      <template #body>
+        <div class="flex flex-col gap-4">
+          <UAlert
+            color="warning"
+            variant="subtle"
+            icon="i-lucide-triangle-alert"
+            title="One-time reveal"
+            description="After you dismiss, these passwords are not shown again. Reset them on the server if you lose them."
+          />
+          <div
+            v-for="row in secretRows"
+            :key="row.service"
+            class="border-default rounded-md border px-3 py-2"
+          >
+            <p class="text-highlighted text-xs font-semibold tracking-wide uppercase">
+              {{ row.service }}
+            </p>
+            <div
+              v-for="field in row.fields"
+              :key="field.key"
+              class="mt-2 flex items-center justify-between gap-2"
+            >
+              <div class="min-w-0">
+                <p class="text-muted text-xs">
+                  {{ field.key }}
+                </p>
+                <p class="text-highlighted truncate font-mono text-sm">
+                  {{ field.value }}
+                </p>
+              </div>
+              <UButton
+                icon="i-lucide-copy"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                aria-label="Copy"
+                @click="copySecret(field.value)"
+              />
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton
+            label="I've saved these"
+            color="primary"
+            @click="onDismissSecrets"
+          />
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

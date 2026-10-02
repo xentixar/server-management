@@ -8,7 +8,7 @@ import (
 	"agent/internal/protocol"
 )
 
-type Handler func(ctx context.Context, job protocol.Job) (string, error)
+type Handler func(ctx context.Context, job protocol.Job) (msg string, secrets map[string]any, err error)
 
 type Executor struct {
 	handlers map[string]Handler
@@ -43,7 +43,7 @@ func (e *Executor) Run(ctx context.Context, job protocol.Job) protocol.JobResult
 		}
 	}
 
-	msg, err := h(ctx, job)
+	msg, secrets, err := h(ctx, job)
 	if err != nil {
 		return protocol.JobResultRequest{
 			OK:       false,
@@ -51,9 +51,9 @@ func (e *Executor) Run(ctx context.Context, job protocol.Job) protocol.JobResult
 			ExitCode: 1,
 		}
 	}
-	return protocol.JobResultRequest{OK: true, Message: msg}
+	return protocol.JobResultRequest{OK: true, Message: msg, Secrets: secrets}
 }
 
-func handlePing(_ context.Context, _ protocol.Job) (string, error) {
-	return "pong", nil
+func handlePing(_ context.Context, _ protocol.Job) (string, map[string]any, error) {
+	return "pong", nil, nil
 }

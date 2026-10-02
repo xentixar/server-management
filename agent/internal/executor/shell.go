@@ -10,14 +10,25 @@ import (
 )
 
 func run(ctx context.Context, name string, args ...string) (string, error) {
+	return runEnv(ctx, nil, name, args...)
+}
+
+func runEnv(ctx context.Context, extraEnv []string, name string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
+	env := os.Environ()
+	// systemd agent units often omit HOME; Composer/fnm need it.
 	if os.Getenv("HOME") == "" {
 		home := "/root"
 		if h, err := os.UserHomeDir(); err == nil && h != "" {
 			home = h
 		}
-		cmd.Env = append(os.Environ(), "HOME="+home, "COMPOSER_HOME="+home+"/.composer")
+		env = append(env, "HOME="+home, "COMPOSER_HOME="+home+"/.composer")
 	}
+	if len(extraEnv) > 0 {
+		env = append(env, extraEnv...)
+	}
+	cmd.Env = env
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -52,7 +63,11 @@ func trimTail(s string, max int) string {
 }
 
 func runShell(ctx context.Context, script string) (string, error) {
-	return run(ctx, "bash", "-lc", script)
+	return runShellEnv(ctx, nil, script)
+}
+
+func runShellEnv(ctx context.Context, extraEnv []string, script string) (string, error) {
+	return runEnv(ctx, extraEnv, "bash", "-lc", script)
 }
 
 func hasCommand(name string) bool {

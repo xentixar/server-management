@@ -19,6 +19,7 @@ export interface Server {
   lastSeenAt?: string | null
   provisionStatus: ProvisionStatus
   provisionedAt?: string | null
+  hasProvisionSecrets: boolean
   runtimes: ServerRuntimes
   sites: number
   createdAt: string
@@ -59,6 +60,7 @@ export interface ServerApi {
   last_seen_at?: string | null
   provision_status?: ProvisionStatus
   provisioned_at?: string | null
+  has_provision_secrets?: boolean
   runtimes?: ServerRuntimes
   sites: number
   created_at: string
@@ -86,6 +88,7 @@ export function mapServer(data: ServerApi): Server {
     lastSeenAt: data.last_seen_at,
     provisionStatus: data.provision_status || 'none',
     provisionedAt: data.provisioned_at,
+    hasProvisionSecrets: !!data.has_provision_secrets,
     runtimes: mapRuntimes(data.runtimes),
     sites: data.sites ?? 0,
     createdAt: data.created_at,

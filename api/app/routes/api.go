@@ -49,6 +49,8 @@ func Register(router *gin.RouterGroup) {
 		group.GET("/:organization/servers/:server", servers.Get)
 		group.POST("/:organization/servers/:server/bootstrap", servers.Bootstrap)
 		group.POST("/:organization/servers/:server/provision", servers.Provision)
+		group.GET("/:organization/servers/:server/provision-secrets", servers.GetProvisionSecrets)
+		group.DELETE("/:organization/servers/:server/provision-secrets", servers.DismissProvisionSecrets)
 		group.GET("/:organization/servers/:server/runtimes", servers.GetRuntimes)
 		group.GET("/:organization/servers/:server/runtimes/catalog", servers.RuntimesCatalog)
 		group.POST("/:organization/servers/:server/runtimes", servers.InstallRuntime)

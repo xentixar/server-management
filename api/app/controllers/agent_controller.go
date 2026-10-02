@@ -86,7 +86,7 @@ func (AgentController) ReportJob(ctx *gin.Context) {
 		return
 	}
 
-	_ = server.ApplyJobResult(ctx, job, req.OK)
+	_ = server.ApplyJobResult(ctx, job, req.OK, req.Secrets)
 
 	ctx.JSON(http.StatusOK, gin.H{"ok": true})
 }

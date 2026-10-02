@@ -84,6 +84,15 @@ export function useServerRuntimes(serverId: MaybeRefOrGetter<string | number>) {
     }
   }
 
+  async function getProvisionSecrets() {
+    const res = await api<Record<string, Record<string, string>>>(`${basePath()}/provision-secrets`)
+    return res.data
+  }
+
+  async function dismissProvisionSecrets() {
+    await api(`${basePath()}/provision-secrets`, { method: 'DELETE' })
+  }
+
   async function pollJob(
     jobId: number,
     opts?: {
@@ -121,6 +130,8 @@ export function useServerRuntimes(serverId: MaybeRefOrGetter<string | number>) {
     setDefault,
     getJob,
     getLatestJob,
+    getProvisionSecrets,
+    dismissProvisionSecrets,
     pollJob,
     fetchAll
   }

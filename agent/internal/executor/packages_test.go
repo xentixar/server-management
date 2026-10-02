@@ -36,6 +36,23 @@ func TestNodeVersionAllowlist(t *testing.T) {
 	}
 }
 
+func TestRandomPassword(t *testing.T) {
+	a, err := randomPassword(24)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := randomPassword(24)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(a) != 24 || len(b) != 24 {
+		t.Fatalf("length: %d %d", len(a), len(b))
+	}
+	if a == b {
+		t.Fatal("expected distinct passwords")
+	}
+}
+
 func TestAddonPackageMap(t *testing.T) {
 	for _, name := range []string{"redis", "mysql", "mariadb", "postgres"} {
 		pkgs := addonPackages[name]
