@@ -111,7 +111,7 @@ See [AGENT.md](AGENT.md).
 | `GET` | `/agent/jobs/next` | Agent token |
 | `POST` | `/agent/jobs/:id/result` | Agent token |
 
-Abilities: `organization.servers.view|create|update|delete` (see `api/app/constants/`).
+Abilities: `organization.servers.view|create|update|delete`, plus `organization.servers.{runtimes,services,crons}.{view,manage}` (see `api/app/constants/`).
 
 ## Outpost HTTP workspace
 

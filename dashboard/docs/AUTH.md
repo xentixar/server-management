@@ -91,7 +91,10 @@ const { can } = useGate()
 |-------|------|
 | Composable | `useServers()` — fetch/create/delete/`testConnection`/`bootstrap` |
 | Abilities | `ServersView`, `ServersCreate`, `ServersUpdate`, `ServersDelete` |
+| Feature abilities | `RuntimesView` / `RuntimesManage`, `ServicesView` / `ServicesManage`, `CronsView` / `CronsManage` |
 | Clear | `clearServers()` on logout |
+
+Runtimes, services, and cron are gated separately from server update: viewers can list (and fetch logs for services/cron); manage covers install/default, CRUD, and process control.
 
 Do not keep module-level stub stores for auth-sensitive data; use `useState` so SSR and client match.
 

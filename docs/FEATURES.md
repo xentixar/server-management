@@ -274,6 +274,7 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 - Version installs are long-running agent jobs (`server.provision`, `runtime.*.install`).
 - Dashboard reads `runtimes` inventory from the control plane (seeded from job payloads).
+- API gates with `organization.servers.runtimes.view|manage` (plus `organization.servers.view`).
 
 ---
 
@@ -299,7 +300,7 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 - Agent validates cron expressions before write; materializes `/etc/cron.d/sa`; redirects each job to `/var/log/sa/cron-<uid>.log`.
 - Provision creates managed Unix user `sm` (sudo); password revealed once with addon secrets. Services/cron default to that user.
 - Service/cron definitions stored in control plane; agent materializes config files.
-- API gates with `organization.servers.view` / `update` (same as runtimes).
+- API gates with `organization.servers.services.view|manage` and `organization.servers.crons.view|manage` (plus `organization.servers.view`).
 
 ---
 

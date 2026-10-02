@@ -15,7 +15,7 @@ import (
 )
 
 func (ServerController) ListCrons(ctx *gin.Context) {
-	server, ok := loadServerForView(ctx)
+	server, ok := loadServerForCronsView(ctx)
 	if !ok {
 		return
 	}
@@ -31,7 +31,7 @@ func (ServerController) ListCrons(ctx *gin.Context) {
 }
 
 func (ServerController) CreateCron(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForCronsManage(ctx)
 	if !ok {
 		return
 	}
@@ -91,7 +91,7 @@ func (ServerController) CreateCron(ctx *gin.Context) {
 }
 
 func (ServerController) UpdateCron(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForCronsManage(ctx)
 	if !ok {
 		return
 	}
@@ -156,7 +156,7 @@ func (ServerController) UpdateCron(ctx *gin.Context) {
 }
 
 func (ServerController) FetchCronLogs(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForCronsView(ctx)
 	if !ok {
 		return
 	}
@@ -192,7 +192,7 @@ func (ServerController) FetchCronLogs(ctx *gin.Context) {
 }
 
 func (ServerController) DeleteCron(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForCronsManage(ctx)
 	if !ok {
 		return
 	}

@@ -15,7 +15,7 @@ import (
 )
 
 func (ServerController) ListServices(ctx *gin.Context) {
-	server, ok := loadServerForView(ctx)
+	server, ok := loadServerForServicesView(ctx)
 	if !ok {
 		return
 	}
@@ -31,7 +31,7 @@ func (ServerController) ListServices(ctx *gin.Context) {
 }
 
 func (ServerController) CreateService(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForServicesManage(ctx)
 	if !ok {
 		return
 	}
@@ -100,7 +100,7 @@ func (ServerController) CreateService(ctx *gin.Context) {
 }
 
 func (ServerController) UpdateService(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForServicesManage(ctx)
 	if !ok {
 		return
 	}
@@ -171,7 +171,7 @@ func (ServerController) UpdateService(ctx *gin.Context) {
 }
 
 func (ServerController) DeleteService(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForServicesManage(ctx)
 	if !ok {
 		return
 	}
@@ -215,7 +215,24 @@ func (ServerController) DeleteService(ctx *gin.Context) {
 }
 
 func (ServerController) ControlService(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	var req requests.ControlServerServiceRequest
+	if !bindJSON(ctx, &req) {
+		return
+	}
+	action := strings.ToLower(strings.TrimSpace(req.Action))
+	if !constants.IsValidServiceControl(action) {
+		respond(ctx).fail("Validation error", gin.H{"action": "must be start, stop, restart, or status"}, http.StatusUnprocessableEntity)
+		return
+	}
+
+	// status/logs are view; start/stop/restart need manage
+	var server models.Server
+	var ok bool
+	if action == constants.ServiceControlStatus {
+		server, ok = loadServerForServicesView(ctx)
+	} else {
+		server, ok = loadServerForServicesManage(ctx)
+	}
 	if !ok {
 		return
 	}
@@ -225,16 +242,6 @@ func (ServerController) ControlService(ctx *gin.Context) {
 
 	svc, ok := loadService(ctx, server.ID)
 	if !ok {
-		return
-	}
-
-	var req requests.ControlServerServiceRequest
-	if !bindJSON(ctx, &req) {
-		return
-	}
-	action := strings.ToLower(strings.TrimSpace(req.Action))
-	if !constants.IsValidServiceControl(action) {
-		respond(ctx).fail("Validation error", gin.H{"action": "must be start, stop, restart, or status"}, http.StatusUnprocessableEntity)
 		return
 	}
 

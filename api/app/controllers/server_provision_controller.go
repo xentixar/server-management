@@ -109,7 +109,7 @@ func (ServerController) Provision(ctx *gin.Context) {
 }
 
 func (ServerController) GetRuntimes(ctx *gin.Context) {
-	server, ok := loadServerForView(ctx)
+	server, ok := loadServerForRuntimesView(ctx)
 	if !ok {
 		return
 	}
@@ -132,6 +132,9 @@ func (ServerController) RuntimesCatalog(ctx *gin.Context) {
 	if !denyUnless(ctx, (policies.ServerPolicy{}).View(member)) {
 		return
 	}
+	if !denyUnless(ctx, (policies.ServerPolicy{}).ViewRuntimes(member)) {
+		return
+	}
 
 	respond(ctx).ok("Runtime catalog", gin.H{
 		"php":  constants.PHPCatalog,
@@ -140,7 +143,7 @@ func (ServerController) RuntimesCatalog(ctx *gin.Context) {
 }
 
 func (ServerController) InstallRuntime(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForRuntimesManage(ctx)
 	if !ok {
 		return
 	}
@@ -209,7 +212,7 @@ func (ServerController) InstallRuntime(ctx *gin.Context) {
 }
 
 func (ServerController) RemoveRuntime(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForRuntimesManage(ctx)
 	if !ok {
 		return
 	}
@@ -221,7 +224,7 @@ func (ServerController) RemoveRuntime(ctx *gin.Context) {
 }
 
 func (ServerController) SetRuntimeDefault(ctx *gin.Context) {
-	server, ok := loadServerForUpdate(ctx)
+	server, ok := loadServerForRuntimesManage(ctx)
 	if !ok {
 		return
 	}
@@ -426,4 +429,55 @@ func loadServerForUpdate(ctx *gin.Context) (models.Server, bool) {
 		return models.Server{}, false
 	}
 	return server, true
+}
+
+func loadServerForFeature(ctx *gin.Context, check func(models.OrganizationMember) bool) (models.Server, bool) {
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
+		return models.Server{}, false
+	}
+	serverID, ok := uintParam(ctx, "server", "Invalid server ID")
+	if !ok {
+		return models.Server{}, false
+	}
+	_, member, ok := requireOrgMember(ctx, organizationID)
+	if !ok {
+		return models.Server{}, false
+	}
+	if !denyUnless(ctx, (policies.ServerPolicy{}).View(member)) {
+		return models.Server{}, false
+	}
+	if !denyUnless(ctx, check(member)) {
+		return models.Server{}, false
+	}
+	server, err := (models.Server{}).FindByID(ctx, serverID, organizationID)
+	if err != nil {
+		respond(ctx).fail("Server not found", gin.H{}, http.StatusNotFound)
+		return models.Server{}, false
+	}
+	return server, true
+}
+
+func loadServerForRuntimesView(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ViewRuntimes)
+}
+
+func loadServerForRuntimesManage(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ManageRuntimes)
+}
+
+func loadServerForServicesView(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ViewServices)
+}
+
+func loadServerForServicesManage(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ManageServices)
+}
+
+func loadServerForCronsView(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ViewCrons)
+}
+
+func loadServerForCronsManage(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ManageCrons)
 }

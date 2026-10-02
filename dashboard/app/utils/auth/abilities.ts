@@ -15,7 +15,13 @@ export const Ability = {
   ServersView: 'organization.servers.view',
   ServersCreate: 'organization.servers.create',
   ServersUpdate: 'organization.servers.update',
-  ServersDelete: 'organization.servers.delete'
+  ServersDelete: 'organization.servers.delete',
+  RuntimesView: 'organization.servers.runtimes.view',
+  RuntimesManage: 'organization.servers.runtimes.manage',
+  ServicesView: 'organization.servers.services.view',
+  ServicesManage: 'organization.servers.services.manage',
+  CronsView: 'organization.servers.crons.view',
+  CronsManage: 'organization.servers.crons.manage'
 } as const
 
 export type Ability = typeof Ability[keyof typeof Ability]

@@ -37,7 +37,7 @@ const phpToAdd = ref('')
 const nodeToAdd = ref('')
 const busy = reactive<Record<RuntimeName, boolean>>({ php: false, node: false })
 const activeJob = ref<AgentJob | null>(null)
-const canManage = computed(() => can(Ability.ServersUpdate) && server.value?.agent === 'online')
+const canManage = computed(() => can(Ability.RuntimesManage) && server.value?.agent === 'online')
 
 function takenVersions(runtime: RuntimeName) {
   const family = runtime === 'php' ? server.value?.runtimes.php : server.value?.runtimes.node

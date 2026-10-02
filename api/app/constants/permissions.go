@@ -22,6 +22,15 @@ const (
 	ServersCreate = "organization.servers.create"
 	ServersUpdate = "organization.servers.update"
 	ServersDelete = "organization.servers.delete"
+
+	RuntimesView   = "organization.servers.runtimes.view"
+	RuntimesManage = "organization.servers.runtimes.manage"
+
+	ServicesView   = "organization.servers.services.view"
+	ServicesManage = "organization.servers.services.manage"
+
+	CronsView   = "organization.servers.crons.view"
+	CronsManage = "organization.servers.crons.manage"
 )
 
 var AllAbilities = []string{
@@ -42,4 +51,10 @@ var AllAbilities = []string{
 	ServersCreate,
 	ServersUpdate,
 	ServersDelete,
+	RuntimesView,
+	RuntimesManage,
+	ServicesView,
+	ServicesManage,
+	CronsView,
+	CronsManage,
 }

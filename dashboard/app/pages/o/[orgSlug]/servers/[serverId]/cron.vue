@@ -26,7 +26,8 @@ const {
 
 await fetchServers()
 const server = computed(() => getById(serverId.value))
-const canManage = computed(() => can(Ability.ServersUpdate) && server.value?.agent === 'online')
+const canViewLogs = computed(() => can(Ability.CronsView) && server.value?.agent === 'online')
+const canManage = computed(() => can(Ability.CronsManage) && server.value?.agent === 'online')
 
 const busy = ref(false)
 const logsOpen = ref(false)
@@ -144,7 +145,7 @@ async function onSubmit() {
 async function openLogs(cron: ServerCron) {
   logsTarget.value = cron
   logsOpen.value = true
-  if (!canManage.value || busy.value) {
+  if (!canViewLogs.value || busy.value) {
     return
   }
   logsLoading.value = true
@@ -313,7 +314,7 @@ async function onDelete() {
             color="primary"
             variant="soft"
             class="shrink-0"
-            :disabled="busy"
+            :disabled="!canViewLogs || busy"
             @click="openLogs(cron)"
           />
         </div>
@@ -360,7 +361,7 @@ async function onDelete() {
                 color="neutral"
                 variant="ghost"
                 :loading="logsLoading"
-                :disabled="!logsCron || busy"
+                :disabled="!logsCron || !canViewLogs || busy"
                 @click="logsCron && openLogs(logsCron)"
               />
               <UButton

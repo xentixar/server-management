@@ -29,6 +29,12 @@ var RolePermissions = map[string][]string{
 		ServersCreate,
 		ServersUpdate,
 		ServersDelete,
+		RuntimesView,
+		RuntimesManage,
+		ServicesView,
+		ServicesManage,
+		CronsView,
+		CronsManage,
 	},
 	ViewerRole: {
 		OrganizationList,
@@ -37,6 +43,9 @@ var RolePermissions = map[string][]string{
 		InvitesView,
 		BillingView,
 		ServersView,
+		RuntimesView,
+		ServicesView,
+		CronsView,
 	},
 }
 

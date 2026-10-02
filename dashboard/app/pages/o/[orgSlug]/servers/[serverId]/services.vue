@@ -27,7 +27,8 @@ const {
 
 await fetchServers()
 const server = computed(() => getById(serverId.value))
-const canManage = computed(() => can(Ability.ServersUpdate) && server.value?.agent === 'online')
+const canViewLogs = computed(() => can(Ability.ServicesView) && server.value?.agent === 'online')
+const canManage = computed(() => can(Ability.ServicesManage) && server.value?.agent === 'online')
 
 const busy = ref(false)
 const logsOpen = ref(false)
@@ -202,7 +203,7 @@ async function openLogs(svc: ServerService, opts?: { keepTab?: boolean }) {
     logsTab.value = 'stdout'
   }
   logsOpen.value = true
-  if (!canManage.value || busy.value) {
+  if (!canViewLogs.value || busy.value) {
     return
   }
   logsLoading.value = true
@@ -368,7 +369,7 @@ async function onDelete() {
             color="primary"
             variant="soft"
             class="shrink-0"
-            :disabled="busy"
+            :disabled="!canViewLogs || busy"
             @click="openLogs(svc)"
           />
         </div>
@@ -444,7 +445,7 @@ async function onDelete() {
                 color="neutral"
                 variant="ghost"
                 :loading="logsLoading"
-                :disabled="!logsService || busy"
+                :disabled="!logsService || !canViewLogs || busy"
                 @click="logsService && openLogs(logsService, { keepTab: true })"
               />
               <UButton

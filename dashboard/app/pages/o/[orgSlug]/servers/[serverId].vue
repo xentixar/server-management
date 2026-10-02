@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { Ability } from '~/utils/auth/abilities'
 import { agentBadgeColor } from '~/utils/servers'
 
 const route = useRoute()
+const { can } = useGate()
 const { orgHref } = useOrganizations()
 const { getById, fetchAll } = useServers()
 
@@ -11,6 +13,9 @@ await fetchAll()
 const serverId = computed(() => String(route.params.serverId || ''))
 const server = computed(() => getById(serverId.value))
 const provisioned = computed(() => server.value?.provisionStatus === 'ready')
+const canViewRuntimes = computed(() => can(Ability.RuntimesView))
+const canViewServices = computed(() => can(Ability.ServicesView))
+const canViewCrons = computed(() => can(Ability.CronsView))
 
 if (!server.value) {
   await navigateTo(orgHref('/servers'), { replace: true })
@@ -19,7 +24,7 @@ if (!server.value) {
 const links = computed(() => {
   const base = orgHref(`/servers/${serverId.value}`)
   const ready = provisioned.value
-  return [[{
+  const items: NavigationMenuItem[] = [{
     label: 'Overview',
     icon: 'i-lucide-layout-dashboard',
     to: base,
@@ -29,35 +34,49 @@ const links = computed(() => {
     icon: 'i-lucide-globe',
     to: ready ? `${base}/sites` : undefined,
     disabled: !ready
-  }, {
-    label: 'Runtimes',
-    icon: 'i-lucide-boxes',
-    to: ready ? `${base}/runtimes` : undefined,
-    disabled: !ready
-  }, {
-    label: 'Services',
-    icon: 'i-lucide-cog',
-    to: ready ? `${base}/services` : undefined,
-    disabled: !ready
-  }, {
-    label: 'Cron',
-    icon: 'i-lucide-clock',
-    to: ready ? `${base}/cron` : undefined,
-    disabled: !ready
-  }]] satisfies NavigationMenuItem[][]
+  }]
+  if (canViewRuntimes.value) {
+    items.push({
+      label: 'Runtimes',
+      icon: 'i-lucide-boxes',
+      to: ready ? `${base}/runtimes` : undefined,
+      disabled: !ready
+    })
+  }
+  if (canViewServices.value) {
+    items.push({
+      label: 'Services',
+      icon: 'i-lucide-cog',
+      to: ready ? `${base}/services` : undefined,
+      disabled: !ready
+    })
+  }
+  if (canViewCrons.value) {
+    items.push({
+      label: 'Cron',
+      icon: 'i-lucide-clock',
+      to: ready ? `${base}/cron` : undefined,
+      disabled: !ready
+    })
+  }
+  return [items]
 })
 
-watch([() => route.path, provisioned], ([path, ready]) => {
-  if (ready || !server.value) {
+watch([() => route.path, provisioned, canViewRuntimes, canViewServices, canViewCrons], ([path, ready, runtimesOK, servicesOK, cronsOK]) => {
+  if (!server.value) {
     return
   }
   const prefix = orgHref(`/servers/${serverId.value}`)
-  if (
+  const blocked = (!ready && (
     path.startsWith(`${prefix}/sites`)
     || path.startsWith(`${prefix}/runtimes`)
     || path.startsWith(`${prefix}/services`)
     || path.startsWith(`${prefix}/cron`)
-  ) {
+  ))
+    || (!runtimesOK && path.startsWith(`${prefix}/runtimes`))
+    || (!servicesOK && path.startsWith(`${prefix}/services`))
+    || (!cronsOK && path.startsWith(`${prefix}/cron`))
+  if (blocked) {
     navigateTo(prefix, { replace: true })
   }
 }, { immediate: true })
