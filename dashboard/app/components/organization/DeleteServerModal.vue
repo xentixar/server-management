@@ -50,7 +50,7 @@ function onConfirm() {
           variant="subtle"
           icon="i-lucide-triangle-alert"
           title="This cannot be undone"
-          description="Sites on this server will be orphaned in the stub UI. Type the hostname to confirm."
+          description="Removes the agent from the host over SSH (binary + systemd). Nginx, databases, and site files stay. Type the hostname to confirm."
         />
 
         <UFormField

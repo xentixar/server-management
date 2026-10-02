@@ -138,10 +138,10 @@ export function useServers() {
       throw new ApiError('Server not found', 404)
     }
 
-    await api(orgPath(`/${id}`), { method: 'DELETE' })
+    const res = await api<{ agent_removed?: boolean, cleanup?: string }>(orgPath(`/${id}`), { method: 'DELETE' })
     servers.value = servers.value.filter(s => s.id !== id)
     syncUsage(servers.value)
-    return existing
+    return { server: existing, message: res.message, cleanup: res.data }
   }
 
   function getById(id: string | number) {

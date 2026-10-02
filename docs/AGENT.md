@@ -47,6 +47,10 @@ sequenceDiagram
 
 Arch detection: remote `uname -m` → `x86_64`/`amd64` or `aarch64`/`arm64`. Matching file must exist under `AGENT_BIN_DIR` (default `api/bin/`).
 
+## Delete / uninstall
+
+`DELETE .../servers/:id` SSHs in and removes the agent (`systemctl` stop/disable, delete binary + `/etc/server-agent` + unit), then deletes the server row and its jobs. **Does not** uninstall nginx, PHP, Node, or databases. If SSH fails, the control-plane record is still removed and the response notes cleanup failure.
+
 ## Protocol (v1)
 
 Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.

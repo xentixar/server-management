@@ -314,12 +314,33 @@ func (ServerController) Delete(ctx *gin.Context) {
 		return
 	}
 
+	target := provision.TargetFromServer(
+		server.IPAddress,
+		server.SSHUser,
+		server.AuthenticationMethod,
+		server.PrivateKey,
+		server.Password,
+		server.Passphrase,
+		server.SSHPort,
+	)
+	cleanup := provision.UninstallAgent(target)
+	_ = (models.AgentJob{}).DeleteForServer(ctx, server.ID)
+
 	if err := server.Delete(ctx); err != nil {
 		respond(ctx).fail("Failed to delete server", gin.H{}, 500)
 		return
 	}
 
-	respond(ctx).ok("Server deleted successfully!", gin.H{}, 200)
+	msg := "Server deleted"
+	if cleanup.OK {
+		msg = "Server deleted and agent removed from host"
+	} else {
+		msg = "Server deleted (agent cleanup failed: " + cleanup.Message + ")"
+	}
+	respond(ctx).ok(msg, gin.H{
+		"agent_removed": cleanup.OK,
+		"cleanup":       cleanup.Message,
+	}, 200)
 }
 
 func sshTarget(fields requests.ServerSSHFields) provision.Target {

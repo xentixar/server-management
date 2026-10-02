@@ -144,6 +144,13 @@ func (AgentJob) LatestByKind(ctx context.Context, serverID uint, kind string) (*
 	return &job, nil
 }
 
+func (AgentJob) DeleteForServer(ctx context.Context, serverID uint) error {
+	_, err := gorm.G[AgentJob](config.GetDatabase()).
+		Where("server_id = ?", serverID).
+		Delete(ctx)
+	return err
+}
+
 // BackfillUIDs assigns opaque uids to legacy rows (needed before unique index is clean).
 func (AgentJob) BackfillUIDs() error {
 	db := config.GetDatabase()

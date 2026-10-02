@@ -49,9 +49,9 @@ async function onConfirmDelete() {
   try {
     const removed = await remove(serverToDelete.value.id)
     toast.add({
-      title: 'Server deleted',
-      description: removed.hostname,
-      color: 'neutral'
+      title: removed.message || 'Server deleted',
+      description: removed.server.hostname,
+      color: removed.cleanup?.agent_removed === false ? 'warning' : 'neutral'
     })
     serverToDelete.value = null
   } catch (error) {

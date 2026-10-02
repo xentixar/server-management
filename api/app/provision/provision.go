@@ -134,6 +134,28 @@ WantedBy=multi-user.target
 	return Result{OK: true, Message: "agent installed and started (" + goarch + ")"}
 }
 
+// UninstallAgent stops the systemd unit and removes agent binary/config. Does not touch app stack (nginx/DBs/etc).
+func UninstallAgent(target Target) Result {
+	client, err := sshrun.Dial(target, dialTimeout)
+	if err != nil {
+		return Result{OK: false, Message: err.Error()}
+	}
+	defer client.Close()
+
+	script := `set -e
+systemctl stop server-agent.service 2>/dev/null || true
+systemctl disable server-agent.service 2>/dev/null || true
+rm -f /usr/local/bin/server-agent /usr/local/bin/server-agent.new
+rm -f /etc/systemd/system/server-agent.service
+rm -rf /etc/server-agent
+systemctl daemon-reload 2>/dev/null || true
+`
+	if _, errOut, err := client.Run(script); err != nil {
+		return Result{OK: false, Message: firstNonEmpty(strings.TrimSpace(errOut), err.Error())}
+	}
+	return Result{OK: true, Message: "agent removed from host"}
+}
+
 func TargetFromServer(host, user, method, key, password, passphrase string, port int) Target {
 	return Target{
 		Host:       host,
