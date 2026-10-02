@@ -30,6 +30,7 @@ func Initialize() {
 		&models.Organization{},
 		&models.OrganizationMember{},
 		&models.OrganizationMemberInvite{},
+		&models.Server{},
 	)
 }
 

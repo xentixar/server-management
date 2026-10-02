@@ -20,6 +20,7 @@ type Organization struct {
 	User          User                       `gorm:"foreignKey:UserID"`
 	Members       []OrganizationMember       `gorm:"foreignKey:OrganizationID"`
 	MemberInvites []OrganizationMemberInvite `gorm:"foreignKey:OrganizationID"`
+	Servers       []Server                   `gorm:"foreignKey:OrganizationID"`
 }
 
 func (Organization) SlugAvailable(ctx context.Context, slug string) bool {
