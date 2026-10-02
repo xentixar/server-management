@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { formatDate } from '~/utils/billing'
+import { ApiError } from '~/utils/api'
 
 const route = useRoute()
+const toast = useToast()
 const serverId = computed(() => String(route.params.serverId || ''))
 
-const { server, run, progress, start, replay } = useServerProvision(serverId)
+const { getById, fetchAll, bootstrap } = useServers()
+await fetchAll()
+
+const server = computed(() => getById(serverId.value))
+const bootstrapping = ref(false)
 
 const facts = computed(() => {
   const s = server.value
@@ -24,13 +30,41 @@ const facts = computed(() => {
     label: 'Region',
     value: s.region || 'n/a'
   }, {
-    label: 'Sites',
-    value: String(s.sites)
+    label: 'Agent',
+    value: s.agentVersion || s.agent
   }, {
     label: 'Added',
     value: formatDate(s.createdAt)
   }]
 })
+
+async function onReinstall() {
+  const s = server.value
+  if (!s) {
+    return
+  }
+  bootstrapping.value = true
+  try {
+    const result = await bootstrap(s.id)
+    toast.add({
+      title: 'Agent reinstalled',
+      description: result.message,
+      color: 'success'
+    })
+    await fetchAll(true)
+  } catch (error) {
+    const detail = error instanceof ApiError && error.data?.message
+      ? String(error.data.message)
+      : error instanceof Error ? error.message : 'Bootstrap failed'
+    toast.add({
+      title: 'Agent install failed',
+      description: detail,
+      color: 'error'
+    })
+  } finally {
+    bootstrapping.value = false
+  }
+}
 </script>
 
 <template>
@@ -73,23 +107,32 @@ const facts = computed(() => {
       description="Heartbeats are intermittent. Check load and network on the host."
     />
     <UAlert
-      v-else-if="server.agent === 'online'"
-      color="success"
+      v-else-if="server.agent === 'pending'"
+      color="warning"
       variant="subtle"
-      icon="i-lucide-check"
-      title="Agent online"
-      :description="`Last known status for ${server.hostname}.`"
+      icon="i-lucide-loader-circle"
+      title="Agent pending"
+      description="Install did not finish or no heartbeat yet. Reinstall over SSH from here."
     />
 
-    <OrganizationServerProvisionPanel
-      :steps="run.steps"
-      :logs="run.logs"
-      :status="run.status"
-      :progress="progress"
-      :auto-start="server.agent === 'pending'"
-      @start="start()"
-      @replay="replay()"
-    />
+    <div class="border-default flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 sm:px-5">
+      <div class="min-w-0">
+        <p class="text-highlighted text-sm font-semibold">
+          Agent
+        </p>
+        <p class="text-muted text-xs">
+          Install runs on the API over SSH. Live logs will land with the job stream later.
+        </p>
+      </div>
+      <UButton
+        label="Reinstall agent"
+        color="neutral"
+        variant="outline"
+        size="sm"
+        :loading="bootstrapping"
+        @click="onReinstall"
+      />
+    </div>
 
     <section
       v-if="server.labels.length || server.notes"

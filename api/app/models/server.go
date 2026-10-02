@@ -3,8 +3,10 @@ package models
 import (
 	"context"
 	"errors"
+	"time"
 
 	"api/app/constants"
+	"api/app/helpers"
 	"api/config"
 
 	"gorm.io/gorm"
@@ -25,6 +27,9 @@ type Server struct {
 	Labels               []string `gorm:"serializer:json"`
 	Notes                string   `gorm:"type:text"`
 	AgentStatus          string   `gorm:"type:varchar(20);not null;default:pending"`
+	AgentToken           string   `gorm:"uniqueIndex"`
+	AgentVersion         string
+	LastSeenAt           *time.Time
 
 	Organization Organization `gorm:"foreignKey:OrganizationID"`
 }
@@ -46,6 +51,12 @@ func (Server) FindByOrganization(ctx context.Context, organizationID uint) ([]Se
 		Find(ctx)
 }
 
+func (Server) FindByAgentToken(ctx context.Context, token string) (Server, error) {
+	return gorm.G[Server](config.GetDatabase()).
+		Where("agent_token = ?", token).
+		First(ctx)
+}
+
 func (s *Server) Create(ctx context.Context) error {
 	if !constants.IsValidAuthMethod(s.AuthenticationMethod) {
 		return errors.New("invalid authentication method")
@@ -62,8 +73,30 @@ func (s *Server) Create(ctx context.Context) error {
 	if s.Labels == nil {
 		s.Labels = []string{}
 	}
+	if s.AgentToken == "" {
+		token, err := helpers.GenerateToken()
+		if err != nil {
+			return err
+		}
+		s.AgentToken = token
+	}
 
 	return gorm.G[Server](config.GetDatabase()).Create(ctx, s)
+}
+
+func (s *Server) RecordHeartbeat(ctx context.Context, agentVersion string) error {
+	now := time.Now().UTC()
+	s.AgentStatus = constants.AgentStatusOnline
+	s.AgentVersion = agentVersion
+	s.LastSeenAt = &now
+
+	return config.GetDatabase().WithContext(ctx).
+		Model(s).
+		Updates(map[string]any{
+			"agent_status":  s.AgentStatus,
+			"agent_version": s.AgentVersion,
+			"last_seen_at":  s.LastSeenAt,
+		}).Error
 }
 
 func (s *Server) Update(ctx context.Context) error {

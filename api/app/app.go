@@ -31,6 +31,7 @@ func Initialize() {
 		&models.OrganizationMember{},
 		&models.OrganizationMemberInvite{},
 		&models.Server{},
+		&models.AgentJob{},
 	)
 }
 
@@ -39,8 +40,8 @@ func Run() {
 		Addr:              ":" + config.MustGet("APP_PORT"),
 		Handler:           GetRouter(),
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       30 * time.Second,
 	}
 

@@ -1,0 +1,98 @@
+# Agent
+
+On-server process that keeps a machine connected to the control plane. Source: [`agent/`](../agent/).
+
+## Role
+
+- Runs on each managed host (systemd unit `server-agent`).
+- **Outbound HTTPS** to the API (works behind NAT).
+- Sends **heartbeats** (version, hostname).
+- **Polls** for jobs, runs allowlisted handlers, reports results.
+- Does **not** accept arbitrary shell from the UI — only registered job kinds.
+
+## Install layout (after API bootstrap)
+
+| Path | Purpose |
+|------|---------|
+| `/usr/local/bin/server-agent` | Binary |
+| `/etc/server-agent/agent.env` | `API_URL`, `SERVER_TOKEN`, intervals |
+| `/etc/systemd/system/server-agent.service` | Unit (`EnvironmentFile` + restart) |
+
+Env file shape:
+
+```bash
+API_URL=http://192.168.1.50:8080
+SERVER_TOKEN=<per-server token>
+HEARTBEAT_INTERVAL=15s
+POLL_INTERVAL=5s
+```
+
+## Bootstrap flow
+
+```mermaid
+sequenceDiagram
+  participant UI as Dashboard
+  participant API as Go API
+  participant Host as Linux host
+
+  UI->>API: POST servers (SSH creds)
+  API->>Host: SSH test (uname)
+  API->>API: Insert server + agent_token
+  API->>Host: SCP agent-linux-{arch}
+  API->>Host: Write agent.env + systemd unit
+  API->>Host: systemctl enable --now server-agent
+  Host->>API: POST /agent/heartbeat
+  API-->>UI: server + bootstrap result
+```
+
+Arch detection: remote `uname -m` → `x86_64`/`amd64` or `aarch64`/`arm64`. Matching file must exist under `AGENT_BIN_DIR` (default `api/bin/`).
+
+## Protocol (v1)
+
+Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
+
+| Call | Path | Notes |
+|------|------|--------|
+| Heartbeat | `POST /api/v1/agent/heartbeat` | Body: `protocol_version`, `agent_version`, `hostname`. Response bare JSON: `{ ok, protocol_version }` (not the usual `{success,data}` envelope). |
+| Next job | `GET /api/v1/agent/jobs/next` | `204` if none; else `{ id, kind, payload }`. |
+| Result | `POST /api/v1/agent/jobs/:id/result` | `{ ok, message, exit_code }`. |
+
+Agent package layout:
+
+```text
+agent/
+  main.go                 # config → client → loop
+  internal/config/        # env
+  internal/protocol/      # wire types + version
+  internal/client/        # HTTP
+  internal/loop/          # heartbeat + poll
+  internal/executor/      # job handlers (ping today)
+```
+
+Add capabilities by registering handlers in `executor` (fail closed for unknown kinds).
+
+## Local debug
+
+```bash
+cd agent
+export API_URL=http://localhost:8080
+export SERVER_TOKEN=...   # from create response or servers.agent_token
+go run .
+```
+
+On a guest after install, use systemd (it loads `/etc/server-agent/agent.env`):
+
+```bash
+systemctl status server-agent
+journalctl -u server-agent -f
+cat /etc/server-agent/agent.env
+```
+
+Running the binary by hand also reads that env file (rebuild/redeploy agent after this change). Check the file exists if config errors persist.
+
+## Security notes
+
+- Per-server token authenticates the agent (not the user JWT).
+- SSH credentials are stored on the API for bootstrap/retry; never returned in list/get responses.
+- Host key verification is currently accept-any (home-lab); pin known_hosts before production.
+- Future: mTLS or rotating agent credentials ([ARCHITECTURE.md](ARCHITECTURE.md)).

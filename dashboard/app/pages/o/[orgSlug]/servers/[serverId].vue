@@ -4,7 +4,9 @@ import { agentBadgeColor } from '~/utils/servers'
 
 const route = useRoute()
 const { orgHref } = useOrganizations()
-const { getById } = useServers()
+const { getById, fetchAll } = useServers()
+
+await fetchAll()
 
 const serverId = computed(() => String(route.params.serverId || ''))
 const server = computed(() => getById(serverId.value))

@@ -17,6 +17,11 @@ const (
 
 	BillingView   = "organization.billing.view"
 	BillingManage = "organization.billing.manage"
+
+	ServersView   = "organization.servers.view"
+	ServersCreate = "organization.servers.create"
+	ServersUpdate = "organization.servers.update"
+	ServersDelete = "organization.servers.delete"
 )
 
 var AllAbilities = []string{
@@ -33,4 +38,8 @@ var AllAbilities = []string{
 	InvitesRevoke,
 	BillingView,
 	BillingManage,
+	ServersView,
+	ServersCreate,
+	ServersUpdate,
+	ServersDelete,
 }

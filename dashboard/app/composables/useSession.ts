@@ -83,6 +83,7 @@ const _useSession = () => {
     user.value = null
     clearOrganizations()
     clearMembers()
+    clearServers()
   }
 
   async function logout() {

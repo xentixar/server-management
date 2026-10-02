@@ -3,18 +3,21 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
 
 type Env struct {
-	AppPort     string
-	Environment string
-	DBHost      string
-	DBPort      string
-	DBUsername  string
-	DBPassword  string
-	DBDatabase  string
+	AppPort      string
+	Environment  string
+	DBHost       string
+	DBPort       string
+	DBUsername   string
+	DBPassword   string
+	DBDatabase   string
+	PublicAPIURL string
+	AgentBinDir  string
 }
 
 var env Env
@@ -32,6 +35,11 @@ func LoadEnv() {
 	env.DBUsername = ensureKeyExists("DB_USERNAME")
 	env.DBPassword = ensureKeyExists("DB_PASSWORD")
 	env.DBDatabase = ensureKeyExists("DB_DATABASE")
+	env.PublicAPIURL = os.Getenv("PUBLIC_API_URL")
+	env.AgentBinDir = os.Getenv("AGENT_BIN_DIR")
+	if env.AgentBinDir == "" {
+		env.AgentBinDir = "bin"
+	}
 }
 
 func MustGet(key string) string {
@@ -50,9 +58,26 @@ func MustGet(key string) string {
 		return env.DBPassword
 	case "DB_DATABASE":
 		return env.DBDatabase
+	case "PUBLIC_API_URL":
+		return env.PublicAPIURL
 	default:
 		panic("Unknown environment key: " + key)
 	}
+}
+
+func PublicAPIURL() string {
+	return env.PublicAPIURL
+}
+
+func AgentBinDir() string {
+	if filepath.IsAbs(env.AgentBinDir) {
+		return env.AgentBinDir
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return env.AgentBinDir
+	}
+	return filepath.Join(cwd, env.AgentBinDir)
 }
 
 func ensureKeyExists(key string) string {

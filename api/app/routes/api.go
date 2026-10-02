@@ -14,6 +14,8 @@ func Register(router *gin.RouterGroup) {
 	organizations := controllers.OrganizationController{}
 	members := controllers.OrganizationMemberController{}
 	invites := controllers.OrganizationMemberInviteController{}
+	servers := controllers.ServerController{}
+	agent := controllers.AgentController{}
 
 	router.GET("/health", health.Check)
 
@@ -40,5 +42,20 @@ func Register(router *gin.RouterGroup) {
 		group.POST("/:organization/invites", invites.Create)
 		group.POST("/:organization/invites/accept", invites.Accept)
 		group.DELETE("/:organization/invites/:invite", invites.Delete)
+
+		group.GET("/:organization/servers", servers.List)
+		group.POST("/:organization/servers/test-connection", servers.TestConnection)
+		group.POST("/:organization/servers", servers.Create)
+		group.GET("/:organization/servers/:server", servers.Get)
+		group.POST("/:organization/servers/:server/bootstrap", servers.Bootstrap)
+		group.PATCH("/:organization/servers/:server", servers.Update)
+		group.DELETE("/:organization/servers/:server", servers.Delete)
+	}
+
+	group = router.Group("/agent", middleware.RequireAgent())
+	{
+		group.POST("/heartbeat", agent.Heartbeat)
+		group.GET("/jobs/next", agent.NextJob)
+		group.POST("/jobs/:job/result", agent.ReportJob)
 	}
 }

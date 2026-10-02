@@ -3,10 +3,12 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import type { Server } from '~/utils/servers'
 import { agentBadgeColor } from '~/utils/servers'
 
-const { servers, atCapacity, serverLimit, remove } = useServers()
+const { servers, atCapacity, serverLimit, remove, fetchAll } = useServers()
 const { orgHref } = useOrganizations()
 const { currentPlan } = useBilling()
 const toast = useToast()
+
+await fetchAll()
 
 const q = ref('')
 const deleteOpen = ref(false)
@@ -40,21 +42,24 @@ function menuItems(server: Server): DropdownMenuItem[][] {
   }]]
 }
 
-function onConfirmDelete() {
+async function onConfirmDelete() {
   if (!serverToDelete.value) {
     return
   }
-  const result = remove(serverToDelete.value.id)
-  if (!result.ok) {
-    toast.add({ title: result.error, color: 'error' })
-    return
+  try {
+    const removed = await remove(serverToDelete.value.id)
+    toast.add({
+      title: 'Server deleted',
+      description: removed.hostname,
+      color: 'neutral'
+    })
+    serverToDelete.value = null
+  } catch (error) {
+    toast.add({
+      title: error instanceof Error ? error.message : 'Failed to delete server',
+      color: 'error'
+    })
   }
-  toast.add({
-    title: 'Server deleted',
-    description: result.server.hostname,
-    color: 'neutral'
-  })
-  serverToDelete.value = null
 }
 
 function onTerraformSoon() {

@@ -1,29 +1,28 @@
 # Roadmap
 
-Phased delivery for the **Outpost monorepo**. Dates are **TBD**; order reflects dependency (API and agent before full UI depth).
+Phased delivery for the **Outpost monorepo**. Dates are **TBD**; order reflects dependency.
 
 Legend:
 
 - **Dashboard** — [dashboard/](../dashboard/)
-- **API** — Go control plane (planned)
-- **Agent** — Go + bash on servers (planned)
-- **TF** — Terraform modules (planned)
+- **API** — Go control plane
+- **Agent** — Go on servers
+- **TF** — Terraform modules
 
-Dashboard-specific tasks and migration checklist: [dashboard/docs/ROADMAP.md](../dashboard/docs/ROADMAP.md).
+Dashboard-specific tasks: [dashboard/docs/ROADMAP.md](../dashboard/docs/ROADMAP.md).
 
 ---
 
-## Phase 0 — Foundation (current)
+## Phase 0 — Foundation
 
 **Goal:** Product narrative, platform docs, and UI information architecture.
 
 | Dashboard | API | Agent | TF |
 |-----------|-----|-------|-----|
 | Frontend docs + template mapping | — | — | — |
-| Optional: stub routes, rename nav | — | — | — |
-| Root `docs/` (features, architecture) | — | — | — |
+| Root `docs/` | — | — | — |
 
-**Exit criteria:** Docs complete; team agrees on IA ([dashboard/docs/DESIGN.md](../dashboard/docs/DESIGN.md)) and feature scope ([FEATURES.md](FEATURES.md)).
+**Status:** Done.
 
 ---
 
@@ -35,20 +34,26 @@ Dashboard-specific tasks and migration checklist: [dashboard/docs/ROADMAP.md](..
 |-----------|-----|-------|-----|
 | Auth UI, org switcher, organization settings | Auth, sessions, Postgres | — | — |
 | Members UI | Org CRUD, invites, RBAC | — | — |
-| Types + Zod for forms | OpenAPI or shared types | — | — |
 
-**Exit criteria:** User can register, get default org, invite member, switch org; API enforces roles.
+**Status:** Done. Exit criteria met (register, default org, invite, switch; API enforces roles).
 
 ---
 
 ## Phase 2 — Manual servers, agent, basic site & deploy
 
-**Goal:** End-to-end path on a single VPS without cloud provisioning.
+**Goal:** End-to-end path on a single VPS / home-lab VM without cloud provisioning.
 
 | Dashboard | API | Agent | TF |
 |-----------|-----|-------|-----|
-| Servers list, manual add, deploy UI | Server CRUD, deploy queue | Install script, heartbeat, Nginx | — |
-| Log viewer | Log stream/storage | Git pull/build | — |
+| Servers list, add form, test connection | Server CRUD, SSH test, bootstrap | Binary install, heartbeat, job poll | — |
+| Site/deploy UI (**remaining**) | Deploy queue (**remaining**) | Nginx / git deploy (**remaining**) | — |
+| Log viewer (**remaining**) | Log stream (**remaining**) | | |
+
+**Status:** In progress.
+
+**Done:** Manual server CRUD; SSH test connection; agent SCP + systemd + env; heartbeat flips status `online`; `ping` jobs; dashboard `useServers` wired.
+
+**Remaining:** Sites, deploys, log streaming, richer provision UI (real job stream vs stub).
 
 **Exit criteria:** Manual server with agent; one site deploys successfully; logs visible in UI.
 
@@ -98,8 +103,9 @@ Dashboard-specific tasks and migration checklist: [dashboard/docs/ROADMAP.md](..
 |------|------------|
 | Agent protocol churn | Version field + compatibility matrix in API |
 | Terraform state leaks | Separate state per org/env; no local prod state on laptops |
-| SSH credentials in browser | Never; upload encrypted to API once |
+| SSH credentials in browser | Never persist client-side; upload to API once |
 | Long deploy logs | Stream + object storage for archives |
 | Multi-server firewall | Server-scoped rules first; cloud SG later |
+| Home-lab host keys | Accept-any today; known_hosts before production |
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for trust boundaries.
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [DEVELOPMENT.md](DEVELOPMENT.md).

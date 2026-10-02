@@ -72,18 +72,18 @@ function sampleMeta(orgId: string) {
   }
 }
 
-function ensureMeta(orgId: string | number) {
-  const key = String(orgId)
-  const store = useState<Record<string, ReturnType<typeof sampleMeta>>>('org-overview-meta', () => ({}))
-  if (!store.value[key]) {
-    store.value = { ...store.value, [key]: sampleMeta(key) }
-  }
-  return store.value[key]!
-}
-
 export function useOrgOverview() {
   const { selected } = useOrganizations()
   const { servers } = useServers()
+  const metaStore = useState<Record<string, ReturnType<typeof sampleMeta>>>('org-overview-meta', () => ({}))
+
+  function ensureMeta(orgId: string | number) {
+    const key = String(orgId)
+    if (!metaStore.value[key]) {
+      metaStore.value = { ...metaStore.value, [key]: sampleMeta(key) }
+    }
+    return metaStore.value[key]!
+  }
 
   const overview = computed(() => {
     const meta = ensureMeta(selected.value?.id ?? '_')

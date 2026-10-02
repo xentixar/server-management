@@ -149,11 +149,11 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 ## 5. Servers
 
-**Status:** Planned
+**Status:** In progress (manual path working; Terraform **Planned**)
 
 ### User goals
 
-- Add machines Outpost can manage—either by provisioning in the cloud or connecting existing VPS.
+- Add machines Outpost can manage—either by provisioning in the cloud or connecting existing VPS / home-lab VM.
 
 ### Key actions
 
@@ -166,22 +166,26 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 #### Manual configuration
 
-- Hostname/IP, SSH port, username.
-- Auth: SSH private key upload or password (discouraged; document risks).
-- Test connection, bootstrap/install **agent**, confirm heartbeat.
-- Labels, notes, maintenance mode.
+- Hostname/IP, SSH port, username. **Done** (API + dashboard).
+- Auth: SSH private key upload or password (discouraged; document risks). **Done**.
+- Test connection over SSH. **Done**.
+- Bootstrap/install **agent** (binary + systemd + env) and confirm heartbeat. **Done**.
+- Labels, notes. **Done** (maintenance mode **Planned**).
+- Re-run bootstrap without recreating the server. **Done** (`POST …/bootstrap`).
 
 #### Server detail
 
-- Status, agent version, last seen, CPU/memory/disk (**Future** metrics depth).
-- Installed runtimes summary, linked sites count.
-- Reinstall agent, decommission server (with confirmation).
+- Status, agent version, last seen. **Partial** (status + version/last seen in API; UI overview still thin).
+- CPU/memory/disk (**Future** metrics depth).
+- Installed runtimes summary, linked sites count. **Planned** (sites stub only).
+- Reinstall agent, decommission server (with confirmation). Reinstall via bootstrap; delete **Done**.
 
 ### Notes for backend / agent
 
-- Terraform runs in control plane workers; state stored securely; not executed from the browser.
-- Agent install via bash bootstrap script over SSH (initial) then mTLS/token channel (**TBD**).
+- Terraform runs in control plane workers; state stored securely; not executed from the browser (**Planned**).
+- Agent install: API SSHs and uploads `agent-linux-{amd64|arm64}`, then agent uses HTTPS + server token. mTLS **TBD**.
 - Manual and provisioned servers converge to the same agent-managed model once connected.
+- Dev / Proxmox: [DEVELOPMENT.md](DEVELOPMENT.md), [AGENT.md](AGENT.md).
 
 ---
 

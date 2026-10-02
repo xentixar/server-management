@@ -2,7 +2,7 @@ export type AgentStatus = 'pending' | 'online' | 'offline' | 'degraded'
 export type SshAuthMethod = 'key' | 'password'
 
 export interface Server {
-  id: string
+  id: number
   hostname: string
   ip: string
   sshPort: number
@@ -13,8 +13,15 @@ export interface Server {
   labels: string[]
   notes?: string
   agent: AgentStatus
+  agentVersion?: string
+  lastSeenAt?: string | null
   sites: number
   createdAt: string
+  agentToken?: string
+  bootstrap?: {
+    ok: boolean
+    message: string
+  }
 }
 
 export interface CreateServerInput {
@@ -23,10 +30,57 @@ export interface CreateServerInput {
   sshPort: number
   sshUser: string
   authMethod: SshAuthMethod
-  hasKeyUploaded: boolean
+  privateKey?: string
+  passphrase?: string
+  password?: string
   region?: string
   labels: string[]
   notes?: string
+}
+
+export interface ServerApi {
+  id: number
+  hostname: string
+  ip: string
+  ssh_port: number
+  ssh_user: string
+  auth_method: SshAuthMethod
+  has_key: boolean
+  region?: string
+  labels: string[]
+  notes?: string
+  agent: AgentStatus
+  agent_version?: string
+  last_seen_at?: string | null
+  sites: number
+  created_at: string
+  agent_token?: string
+  bootstrap?: {
+    ok: boolean
+    message: string
+  }
+}
+
+export function mapServer(data: ServerApi): Server {
+  return {
+    id: data.id,
+    hostname: data.hostname,
+    ip: data.ip,
+    sshPort: data.ssh_port,
+    sshUser: data.ssh_user,
+    authMethod: data.auth_method,
+    hasKeyUploaded: data.has_key,
+    region: data.region || undefined,
+    labels: data.labels ?? [],
+    notes: data.notes || undefined,
+    agent: data.agent,
+    agentVersion: data.agent_version || undefined,
+    lastSeenAt: data.last_seen_at,
+    sites: data.sites ?? 0,
+    createdAt: data.created_at,
+    agentToken: data.agent_token,
+    bootstrap: data.bootstrap
+  }
 }
 
 export function agentBadgeColor(agent: AgentStatus) {

@@ -2,12 +2,16 @@
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { SshAuthMethod } from '~/utils/servers'
+import { ApiError } from '~/utils/api'
 
-const { create, atCapacity, serverLimit } = useServers()
+const { create, testConnection, atCapacity, serverLimit } = useServers()
 const { orgHref } = useOrganizations()
 const { currentPlan } = useBilling()
 const router = useRouter()
 const toast = useToast()
+const submitting = ref(false)
+const testing = ref(false)
+const privateKey = ref('')
 
 const schema = z.object({
   hostname: z.string().min(2, 'Too short'),
@@ -57,19 +61,21 @@ const authItems = [{
   value: 'password' as SshAuthMethod
 }]
 
-function onKeyFile(e: Event) {
+async function onKeyFile(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) {
     keyFileName.value = ''
     keyUploaded.value = false
+    privateKey.value = ''
     return
   }
   keyFileName.value = file.name
-  keyUploaded.value = true
+  privateKey.value = await file.text()
+  keyUploaded.value = !!privateKey.value.trim()
 }
 
-function onSubmit(event: FormSubmitEvent<Schema>) {
+async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (atCapacity.value) {
     toast.add({
       title: 'Plan limit reached',
@@ -88,43 +94,105 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
     return
   }
 
-  const labels = (event.data.labels || '')
+  submitting.value = true
+  try {
+    const server = await create(buildInput(event.data))
+
+    if (server.bootstrap && !server.bootstrap.ok) {
+      toast.add({
+        title: 'Server saved, agent install failed',
+        description: server.bootstrap.message,
+        color: 'warning'
+      })
+    } else {
+      toast.add({
+        title: 'Server added',
+        description: server.bootstrap?.message || `${server.hostname} agent install started.`,
+        color: 'success'
+      })
+    }
+
+    await router.push(orgHref(`/servers/${server.id}`))
+  } catch (error) {
+    const detail = error instanceof ApiError && error.data?.message
+      ? String(error.data.message)
+      : error instanceof Error ? error.message : 'Failed to create server'
+    toast.add({
+      title: error instanceof ApiError ? error.message : 'Failed to create server',
+      description: detail !== (error instanceof Error ? error.message : '') ? detail : undefined,
+      color: 'error'
+    })
+  } finally {
+    submitting.value = false
+  }
+}
+
+function buildInput(data: Schema): Parameters<typeof create>[0] {
+  const labels = (data.labels || '')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean)
 
-  const result = create({
-    hostname: event.data.hostname,
-    ip: event.data.ip,
-    sshPort: event.data.sshPort,
-    sshUser: event.data.sshUser,
-    authMethod: event.data.authMethod,
-    hasKeyUploaded: keyUploaded.value,
-    region: event.data.region,
+  return {
+    hostname: data.hostname,
+    ip: data.ip,
+    sshPort: data.sshPort,
+    sshUser: data.sshUser,
+    authMethod: data.authMethod,
+    privateKey: data.authMethod === 'key' ? privateKey.value : undefined,
+    passphrase: data.passphrase,
+    password: data.password,
+    region: data.region,
     labels,
-    notes: event.data.notes
-  })
+    notes: data.notes
+  }
+}
 
-  if (!result.ok) {
-    toast.add({ title: result.error, color: 'error' })
+async function onTestConnection() {
+  if (!state.ip?.trim() || !state.sshUser?.trim()) {
+    toast.add({ title: 'IP and SSH user are required', color: 'error' })
+    return
+  }
+  if (state.authMethod === 'key' && !keyUploaded.value) {
+    toast.add({ title: 'Private key required', color: 'error' })
+    return
+  }
+  if (state.authMethod === 'password' && !state.password?.trim()) {
+    toast.add({ title: 'Password required', color: 'error' })
     return
   }
 
-  toast.add({
-    title: 'Server added',
-    description: `${result.server.hostname} is pending agent install. API wiring comes later.`,
-    color: 'success'
-  })
-
-  router.push(orgHref(`/servers/${result.server.id}`))
-}
-
-function onTestConnection() {
-  toast.add({
-    title: 'Not wired yet',
-    description: 'Connection tests will run on the API, not in the browser.',
-    color: 'neutral'
-  })
+  testing.value = true
+  try {
+    const result = await testConnection(buildInput({
+      hostname: state.hostname || 'test',
+      ip: state.ip!,
+      sshPort: state.sshPort || 22,
+      sshUser: state.sshUser!,
+      authMethod: state.authMethod || 'key',
+      passphrase: state.passphrase,
+      password: state.password,
+      region: state.region,
+      labels: state.labels,
+      notes: state.notes
+    }))
+    toast.add({
+      title: 'SSH connection ok',
+      description: result.message,
+      color: 'success'
+    })
+  } catch (error) {
+    const detail = error instanceof ApiError && error.data?.message
+      ? String(error.data.message)
+      : error instanceof Error ? error.message : 'SSH failed'
+    toast.add({
+      title: 'SSH connection failed',
+      description: detail,
+      color: 'error'
+    })
+  } finally {
+    testing.value = false
+  }
 }
 
 function onTerraformSoon() {
@@ -162,7 +230,7 @@ function onTerraformSoon() {
             Connect an existing machine
           </h1>
           <p class="text-muted text-sm">
-            Outpost will install an agent over SSH after the API is wired. Credentials stay in this form only for now.
+            We SSH into the host, verify access, install the agent binary, and start it with your API URL + server token.
           </p>
         </div>
 
@@ -367,6 +435,8 @@ function onTerraformSoon() {
               label="Test connection"
               color="neutral"
               variant="outline"
+              :loading="testing"
+              :disabled="submitting"
               @click="onTestConnection"
             />
             <div class="flex gap-2">
@@ -380,6 +450,7 @@ function onTerraformSoon() {
                 type="submit"
                 label="Add server"
                 :disabled="atCapacity"
+                :loading="submitting"
               />
             </div>
           </div>

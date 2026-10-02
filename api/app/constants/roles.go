@@ -25,6 +25,10 @@ var RolePermissions = map[string][]string{
 		InvitesRevoke,
 		BillingView,
 		BillingManage,
+		ServersView,
+		ServersCreate,
+		ServersUpdate,
+		ServersDelete,
 	},
 	ViewerRole: {
 		OrganizationList,
@@ -32,6 +36,7 @@ var RolePermissions = map[string][]string{
 		MembersView,
 		InvitesView,
 		BillingView,
+		ServersView,
 	},
 }
 

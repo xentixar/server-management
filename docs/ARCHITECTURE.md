@@ -14,12 +14,12 @@ flowchart TB
     Dashboard[Nuxt Dashboard]
   end
 
-  subgraph control [Control plane planned]
+  subgraph control [Control plane]
     API[Go API]
     PG[(Postgres)]
-    Redis[(Redis)]
-    Worker[Workers]
-    TF[Terraform runner]
+    Redis[(Redis planned)]
+    Worker[Workers planned]
+    TF[Terraform runner planned]
   end
 
   subgraph infra [Cloud planned]
@@ -30,79 +30,97 @@ flowchart TB
   subgraph managed [Managed servers]
     Agent1[Agent]
     Agent2[Agent]
-    Nginx[Nginx]
-    Apps[Sites and runtimes]
+    Nginx[Nginx planned]
+    Apps[Sites planned]
   end
 
   Browser --> Dashboard
   Dashboard --> API
   API --> PG
-  API --> Redis
-  Worker --> Redis
-  Worker --> TF
-  TF --> DO
-  TF --> AWS
-  Worker --> Agent1
-  Worker --> Agent2
-  API --> Agent1
-  Agent1 --> Nginx
-  Agent1 --> Apps
-  Agent2 --> Apps
+  API -.-> Redis
+  Worker -.-> Redis
+  Worker -.-> TF
+  TF -.-> DO
+  TF -.-> AWS
+  API -->|SSH bootstrap once| Agent1
+  Agent1 -->|HTTPS heartbeat jobs| API
+  Agent2 -->|HTTPS| API
+  Agent1 -.-> Nginx
+  Agent1 -.-> Apps
 ```
 
 ## Components
 
-| Component | Location | Technology | Responsibility |
-|-----------|----------|------------|----------------|
-| Dashboard | `dashboard/` | Nuxt 4, Vue 3, Nuxt UI | UI, form validation, API client, real-time log viewers |
-| Control plane API | `api/` (planned) | Go | Auth, orgs, RBAC, billing webhooks, resource CRUD, job enqueue |
-| Job workers | with API (planned) | Go + Redis queue | Provisioning, deploys, SSL renewal, long scripts |
-| Agent | `agent/` (planned) | Go + bash helpers | On-server desired state: files, Nginx, services, deploys, log tail |
-| Provisioner | `terraform/` (planned) | Terraform | DO/AWS modules; invoked by workers, not by browser |
-| Data store | (planned) | Postgres | Users, orgs, servers, sites, releases, audit |
-| Queue / cache | (planned) | Redis | Job queue, pub/sub for log streams, rate limits |
+| Component | Location | Technology | Status / responsibility |
+|-----------|----------|------------|-------------------------|
+| Dashboard | `dashboard/` | Nuxt 4, Vue 3, Nuxt UI | Auth, orgs, members, servers UI; Nitro proxy to API |
+| Control plane API | `api/` | Go, Gin, GORM, Postgres | Auth, orgs, RBAC, server CRUD, SSH test/bootstrap, agent API |
+| Agent | `agent/` | Go | Heartbeat + job poll; systemd on host |
+| Job workers | with API | Go + Redis | Planned — long deploys / TF |
+| Provisioner | `terraform/` | Terraform | Planned — DO/AWS |
+| Queue / cache | — | Redis | Planned |
 
 ## Trust boundaries
 
-1. **Browser ↔ Dashboard:** Static/SSR assets; no secrets in client bundles except public config (`apiBase`).
-2. **Dashboard ↔ API:** Session cookie or bearer token; HTTPS only in production. See [dashboard/docs/API.md](../dashboard/docs/API.md).
-3. **API ↔ Agent:** Mutually authenticated channel (**TBD**: mTLS with rotating certs or signed JWT + nonce). Agent initiates outbound connection (**preferred** for NAT) or API connects via SSH bastion — **TBD**.
-4. **API ↔ Cloud providers:** Org-stored credentials encrypted at rest; used only in worker processes.
-5. **UI never runs Terraform or SSH directly** — only requests jobs; workers execute with audit trail.
+1. **Browser ↔ Dashboard:** Static/SSR assets; no SSH secrets in the client after submit (sent once to API).
+2. **Dashboard ↔ API:** Bearer token cookie (`outpost_token`); same-origin `/api/v1` proxy. See [dashboard/docs/API.md](../dashboard/docs/API.md).
+3. **API ↔ Agent:** Agent initiates HTTPS with per-server `SERVER_TOKEN`. Protocol v1 today; mTLS later (**TBD**).
+4. **API ↔ host (bootstrap only):** API SSHs with stored key/password to install/upgrade the agent. UI never opens SSH.
+5. **API ↔ Cloud providers:** Planned — org credentials encrypted at rest.
 
 ### Security requirements (non-negotiable)
 
-- No arbitrary shell execution from UI; allowlisted commands per stack template.
-- Signed job payloads (job ID, org ID, server ID, action, expiry).
-- All mutations logged (who, when, resource, outcome).
-- RBAC on API; UI role checks are advisory.
-- Secrets (SSH keys, DB passwords, provider tokens) never returned in full after creation; reveal-once patterns where needed.
+- No arbitrary shell execution from UI; allowlisted agent job kinds only.
+- RBAC on API; UI `can(Ability…)` checks are advisory.
+- Secrets (SSH keys, passwords, agent tokens) not returned on list/get; create may return `agent_token` once.
+- Host key verification: accept-any for home-lab speed — pin `known_hosts` before production.
 
 ## Multi-tenancy
 
-- Single database schema with `organization_id` on all tenant resources.
-- Users may belong to many orgs via `memberships` table (**planned**).
-- Server and site identifiers unique within org; global UUIDs for API paths recommended.
-- Billing entitlements scoped per org (max servers, sites, seats).
+- `organization_id` on tenant resources (servers, …).
+- Users belong to many orgs via `organization_members`.
+- Hostname unique per organization.
+- Billing entitlements per org (planned enforcement beyond UI stubs).
+
+## Manual server + agent flow (implemented)
+
+```mermaid
+sequenceDiagram
+  participant UI as Dashboard
+  participant API as API
+  participant Host as Linux host
+  participant Agent as Agent
+
+  UI->>API: POST test-connection
+  API->>Host: SSH uname
+  API-->>UI: ok / error
+
+  UI->>API: POST servers
+  API->>Host: SSH test
+  API->>API: Insert server + agent_token
+  API->>Host: Upload binary + env + unit
+  API->>Host: systemctl enable --now
+  Agent->>API: POST /agent/heartbeat
+  API-->>UI: server + bootstrap status
+```
+
+See [AGENT.md](AGENT.md) and [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Agent model
 
-The agent maintains **desired state** from the control plane:
+The agent will maintain **desired state** from the control plane:
 
-| Domain | Agent actions |
-|--------|----------------|
-| Deploy | Clone/build, atomic release dir, health check, optional zero-downtime swap |
-| Nginx | Render vhost from site spec, `nginx -t`, reload |
-| Runtimes | Install Node/PHP versions via scripts |
-| Cron / services | Write config, reload supervisor/systemd |
-| Logs | Tail files, stream to API |
-| Firewall | Apply rule set (**implementation TBD**) |
+| Domain | Agent actions | Status |
+|--------|----------------|--------|
+| Heartbeat / jobs | Poll, `ping` handler | Done |
+| Deploy | Clone/build, release swap | Planned |
+| Nginx | Render vhost, reload | Planned |
+| Runtimes | Install Node/PHP | Planned |
+| Cron / services | Config + reload | Planned |
+| Logs | Tail → API | Planned |
+| Firewall | Apply rules | TBD |
 
-Agent reports: version, heartbeat, inventory (installed runtimes), job results.
-
-Initial bootstrap: SSH one-time script installs agent binary and registers with org/server token.
-
-## Terraform provisioning flow
+## Terraform provisioning flow (planned)
 
 ```mermaid
 sequenceDiagram
@@ -119,33 +137,31 @@ sequenceDiagram
   TF->>Cloud: Create droplet or EC2
   Cloud-->>TF: IP and instance id
   W->>Agent: Bootstrap via SSH
-  Agent-->>API: Registered heartbeat
+  Agent-->>API: Heartbeat
   API-->>UI: Server ready
 ```
 
-State storage: remote backend per environment; org-specific workspaces or tagged resources — **TBD** in Terraform project.
+Same agent bootstrap path as manual servers once the instance has SSH.
 
 ## Real-time
 
-- Deploy and provision logs: SSE or WebSocket from API, subscribed by job ID.
-- Notifications: poll or push channel to dashboard notifications UI.
+- Deploy and provision logs: SSE or WebSocket from API (**planned**).
+- Notifications: poll or push to dashboard UI.
 
 ## Observability (Future)
 
-- API and workers: structured logs, metrics, tracing.
-- Agent: forward critical errors to control plane.
-- Dashboard: optional error reporting (Sentry etc.) — not in scope initially.
+- API/agent: structured logs, metrics, tracing.
+- Dashboard: optional error reporting.
 
-## Repository layout (target monorepo)
+## Repository layout
 
 ```text
 server-management/
   dashboard/     # Nuxt UI
-  api/           # Go control plane (planned)
-  agent/         # Go on-server agent (planned)
+  api/           # Go control plane
+  agent/         # On-server agent
   terraform/     # DO/AWS modules (planned)
-  scripts/       # Shared bash bootstrap (planned)
-  docs/          # Platform docs (this folder)
+  docs/          # Platform docs
 ```
 
-Cross-repo versioning: agent ↔ API protocol version negotiated on connect; dashboard displays incompatible agent warnings.
+Agent ↔ API: `protocol_version` on heartbeat; bump when wire format breaks.

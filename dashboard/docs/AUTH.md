@@ -85,6 +85,14 @@ const { can } = useGate()
 | Page load | `await fetchAll()` in the members page (SSR) |
 | Clear | `clearMembers()` on logout |
 
+## Servers
+
+| Piece | Path |
+|-------|------|
+| Composable | `useServers()` — fetch/create/delete/`testConnection`/`bootstrap` |
+| Abilities | `ServersView`, `ServersCreate`, `ServersUpdate`, `ServersDelete` |
+| Clear | `clearServers()` on logout |
+
 Do not keep module-level stub stores for auth-sensitive data; use `useState` so SSR and client match.
 
 ## Related pages
@@ -96,3 +104,4 @@ Do not keep module-level stub stores for auth-sensitive data; use `useState` so 
 | `/o/:orgSlug/organization` | Gate update/delete |
 | `/o/:orgSlug/organization/members` | Gate invite/role/remove |
 | `/o/:orgSlug/organization/billing` | Gate manage vs view |
+| `/o/:orgSlug/servers` | List / add / detail; gate with server abilities |

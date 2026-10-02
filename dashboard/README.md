@@ -8,12 +8,12 @@ Platform docs (features, backend architecture, monorepo roadmap): [../docs/](../
 
 | In scope here | Out of scope (see root [docs/](../docs/)) |
 |---------------|---------------------------------------------|
-| Pages, layouts, components | Go API, Postgres, Redis |
-| Client validation (Zod) | Agent, bash bootstrap |
-| API client / Nitro proxy | Terraform modules |
-| Auth, orgs, members UI + ability gates | Billing provider webhooks |
+| Pages, layouts, components | Postgres, Redis, Terraform |
+| Client validation (Zod) | Agent binary / SSH (runs in API) |
+| API client / Nitro proxy | Job workers |
+| Auth, orgs, members, servers UI + ability gates | Billing provider webhooks |
 
-Details: [docs/SCOPE.md](docs/SCOPE.md).
+Details: [docs/SCOPE.md](docs/SCOPE.md). Platform setup: [../docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md).
 
 ## Stack
 

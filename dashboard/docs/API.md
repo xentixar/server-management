@@ -1,6 +1,6 @@
 # API integration (dashboard)
 
-How the Nuxt app talks to the **Go control plane**. Server architecture: [../../docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md). Auth details: [AUTH.md](AUTH.md).
+How the Nuxt app talks to the **Go control plane**. Server architecture: [../../docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md). Auth details: [AUTH.md](AUTH.md). Local setup: [../../docs/DEVELOPMENT.md](../../docs/DEVELOPMENT.md).
 
 ## Configuration
 
@@ -18,8 +18,9 @@ Browser calls same-origin `/api/v1/*`; Nitro proxies to `apiBase` (avoids CORS, 
 Use **`useApi().api<T>(path, options)`** for all authenticated control-plane requests.
 
 - Sends `Authorization: Bearer` from the `outpost_token` cookie.
-- Expects `{ success, message, data }` envelopes (`~/utils/api`).
+- Expects `{ success, message, data }` envelopes (`~/utils/api`) for user routes.
 - Do not duplicate business rules in Nitro — proxy only.
+- Long operations (SSH test / create+bootstrap) can take up to ~2 minutes; avoid short client timeouts.
 
 ## Composables
 
@@ -29,15 +30,24 @@ Use **`useApi().api<T>(path, options)`** for all authenticated control-plane req
 | `useOrganizations` | Memberships, selected org by slug, CRUD |
 | `useMembers` | Members + invites for selected org |
 | `useGate` | `can` / `cannot` over `selected.permissions` |
-| `useServers` / `useSites` / `useBilling` | Local stubs until those APIs land |
+| `useServers` | List/create/delete/testConnection/bootstrap against API |
+| `useSites` / `useBilling` | Local stubs until those APIs land |
+
+### Servers
+
+- `await fetchAll()` on org home and servers pages.
+- Create body uses snake_case fields (`ssh_port`, `auth_method`, `private_key`, …).
+- Create response may include `bootstrap: { ok, message }` and one-time `agent_token`.
+- Abilities: `organization.servers.view|create|update|delete`.
 
 ## Types & abilities
 
 - Org from API: `{ id, name, slug, role?, permissions? }`.
 - Ability strings: `app/utils/auth/abilities.ts` (must match `api/app/constants/permissions.go`).
-- Zod schemas for forms mirror API request bodies.
+- Server mapping: `app/utils/servers.ts` (`mapServer`).
 
 ## Real-time (planned)
 
 - Deploy/provision logs: SSE or WebSocket from API, keyed by job ID.
 - Notifications: poll or push into `NotificationsSlideover`.
+- Server provision panel still uses a local stub timeline until job streams land.

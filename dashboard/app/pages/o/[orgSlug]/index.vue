@@ -5,9 +5,12 @@ import { agentBadgeColor } from '~/utils/servers'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
 const { selected, orgHref } = useOrganizations()
+const { fetchAll: fetchServers } = useServers()
 const { overview, isEmpty } = useOrgOverview()
 const { currentPlan, subscription } = useBilling()
 const toast = useToast()
+
+await fetchServers()
 
 const stats = computed(() => [{
   label: 'Servers',

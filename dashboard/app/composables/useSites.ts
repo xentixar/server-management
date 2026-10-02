@@ -92,26 +92,26 @@ function sampleSites(): Site[] {
   }]
 }
 
-function ensure(orgId: string | number): Site[] {
-  const key = String(orgId)
-  const store = useState<Record<string, Site[]>>('sites-by-org', () => ({}))
-  if (!store.value[key]) {
-    store.value = { ...store.value, [key]: sampleSites() }
-  }
-  return store.value[key]!
-}
-
 export function useSites() {
   const { selected } = useOrganizations()
   const { servers, getById, setSitesCount } = useServers()
   const { setUsage } = useBilling()
+  const store = useState<Record<string, Site[]>>('sites-by-org', () => ({}))
+
+  function ensure(orgId: string | number): Site[] {
+    const key = String(orgId)
+    if (!store.value[key]) {
+      store.value = { ...store.value, [key]: sampleSites() }
+    }
+    return store.value[key]!
+  }
 
   const sites = computed(() => ensure(selected.value?.id ?? '_'))
 
   function syncCounts() {
     const list = ensure(selected.value?.id ?? '_')
     for (const server of servers.value) {
-      setSitesCount(server.id, list.filter(s => s.serverId === server.id).length)
+      setSitesCount(server.id, list.filter(s => s.serverId === String(server.id)).length)
     }
     setUsage({ sites: list.length })
   }

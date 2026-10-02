@@ -19,7 +19,10 @@ type Config struct {
 	HTTPTimeout       time.Duration
 }
 
+const systemEnvFile = "/etc/server-agent/agent.env"
+
 func Load() (Config, error) {
+	_ = godotenv.Load(systemEnvFile)
 	_ = godotenv.Load()
 
 	cfg := Config{

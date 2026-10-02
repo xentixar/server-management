@@ -64,15 +64,6 @@ function defaultSubscription(orgId: string): SubscriptionState {
   }
 }
 
-function ensure(orgId: string | number): SubscriptionState {
-  const key = String(orgId)
-  const store = useState<Record<string, SubscriptionState>>('billing-by-org', () => ({}))
-  if (!store.value[key]) {
-    store.value = { ...store.value, [key]: defaultSubscription(key) }
-  }
-  return store.value[key]!
-}
-
 function nextRenewal(interval: BillingInterval) {
   const d = new Date(ANCHOR)
   if (interval === 'yearly') {
@@ -85,6 +76,15 @@ function nextRenewal(interval: BillingInterval) {
 
 export function useBilling() {
   const { selected } = useOrganizations()
+  const store = useState<Record<string, SubscriptionState>>('billing-by-org', () => ({}))
+
+  function ensure(orgId: string | number): SubscriptionState {
+    const key = String(orgId)
+    if (!store.value[key]) {
+      store.value = { ...store.value, [key]: defaultSubscription(key) }
+    }
+    return store.value[key]!
+  }
 
   const subscription = computed(() => ensure(selected.value?.id ?? '_'))
   const currentPlan = computed(() => planById(subscription.value.planId))
