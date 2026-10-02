@@ -37,7 +37,7 @@ func ServerResource(data models.Server) map[string]any {
 		"region":           data.Region,
 		"labels":           labels,
 		"notes":            data.Notes,
-		"agent":            data.AgentStatus,
+		"agent":            data.EffectiveAgentStatus(),
 		"agent_version":    data.AgentVersion,
 		"last_seen_at":     lastSeenAt,
 		"provision_status":      data.ProvisionStatus,

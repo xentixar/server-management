@@ -110,6 +110,25 @@ func (s *Server) RecordHeartbeat(ctx context.Context, agentVersion string) error
 		}).Error
 }
 
+// EffectiveAgentStatus is online/degraded/offline from last_seen_at (stored status alone stays sticky).
+func (s Server) EffectiveAgentStatus() string {
+	if s.LastSeenAt == nil {
+		if s.AgentStatus == constants.AgentStatusPending || s.AgentStatus == "" {
+			return constants.AgentStatusPending
+		}
+		return constants.AgentStatusOffline
+	}
+	age := time.Since(s.LastSeenAt.UTC())
+	switch {
+	case age <= time.Duration(constants.AgentOnlineWithin)*time.Second:
+		return constants.AgentStatusOnline
+	case age <= time.Duration(constants.AgentDegradedWithin)*time.Second:
+		return constants.AgentStatusDegraded
+	default:
+		return constants.AgentStatusOffline
+	}
+}
+
 func (s *Server) Update(ctx context.Context) error {
 	if s.AuthenticationMethod != "" && !constants.IsValidAuthMethod(s.AuthenticationMethod) {
 		return errors.New("invalid authentication method")

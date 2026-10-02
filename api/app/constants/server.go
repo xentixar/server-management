@@ -9,6 +9,9 @@ const (
 	AgentStatusOffline  = "offline"
 	AgentStatusDegraded = "degraded"
 
+	AgentOnlineWithin   = 45  // seconds
+	AgentDegradedWithin = 120 // seconds
+
 	ProvisionStatusNone    = "none"
 	ProvisionStatusPending = "pending"
 	ProvisionStatusRunning = "running"

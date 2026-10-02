@@ -35,7 +35,7 @@ func (ServerController) Provision(ctx *gin.Context) {
 		respond(ctx).fail("Server not found", gin.H{}, http.StatusNotFound)
 		return
 	}
-	if server.AgentStatus != constants.AgentStatusOnline {
+	if server.EffectiveAgentStatus() != constants.AgentStatusOnline {
 		respond(ctx).fail("Agent must be online to provision", gin.H{}, http.StatusUnprocessableEntity)
 		return
 	}
@@ -144,7 +144,7 @@ func (ServerController) InstallRuntime(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	if server.AgentStatus != constants.AgentStatusOnline {
+	if server.EffectiveAgentStatus() != constants.AgentStatusOnline {
 		respond(ctx).fail("Agent must be online", gin.H{}, http.StatusUnprocessableEntity)
 		return
 	}
@@ -225,7 +225,7 @@ func (ServerController) SetRuntimeDefault(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	if server.AgentStatus != constants.AgentStatusOnline {
+	if server.EffectiveAgentStatus() != constants.AgentStatusOnline {
 		respond(ctx).fail("Agent must be online", gin.H{}, http.StatusUnprocessableEntity)
 		return
 	}
