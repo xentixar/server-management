@@ -122,8 +122,12 @@ export function useSites() {
     if (list.some(s => s.domain.toLowerCase() === domain)) {
       return { ok: false as const, error: 'That domain is already used in this organization.' }
     }
-    if (!getById(input.serverId)) {
+    const server = getById(input.serverId)
+    if (!server) {
       return { ok: false as const, error: 'Server not found.' }
+    }
+    if (server.provisionStatus !== 'ready') {
+      return { ok: false as const, error: 'Provision the server stack first.' }
     }
 
     const site: Site = {

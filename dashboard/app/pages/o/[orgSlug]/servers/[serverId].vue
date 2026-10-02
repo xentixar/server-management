@@ -10,6 +10,7 @@ await fetchAll()
 
 const serverId = computed(() => String(route.params.serverId || ''))
 const server = computed(() => getById(serverId.value))
+const provisioned = computed(() => server.value?.provisionStatus === 'ready')
 
 if (!server.value) {
   await navigateTo(orgHref('/servers'), { replace: true })
@@ -17,6 +18,7 @@ if (!server.value) {
 
 const links = computed(() => {
   const base = orgHref(`/servers/${serverId.value}`)
+  const ready = provisioned.value
   return [[{
     label: 'Overview',
     icon: 'i-lucide-layout-dashboard',
@@ -25,13 +27,25 @@ const links = computed(() => {
   }, {
     label: 'Sites',
     icon: 'i-lucide-globe',
-    to: `${base}/sites`
+    to: ready ? `${base}/sites` : undefined,
+    disabled: !ready
   }, {
     label: 'Runtimes',
     icon: 'i-lucide-boxes',
-    to: `${base}/runtimes`
+    to: ready ? `${base}/runtimes` : undefined,
+    disabled: !ready
   }]] satisfies NavigationMenuItem[][]
 })
+
+watch([() => route.path, provisioned], ([path, ready]) => {
+  if (ready || !server.value) {
+    return
+  }
+  const prefix = orgHref(`/servers/${serverId.value}`)
+  if (path.startsWith(`${prefix}/sites`) || path.startsWith(`${prefix}/runtimes`)) {
+    navigateTo(prefix, { replace: true })
+  }
+}, { immediate: true })
 </script>
 
 <template>

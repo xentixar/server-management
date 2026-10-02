@@ -113,6 +113,9 @@ func (ServerController) GetRuntimes(ctx *gin.Context) {
 	if !ok {
 		return
 	}
+	if !requireProvisionReady(ctx, server) {
+		return
+	}
 	server.Runtimes.Normalize()
 	respond(ctx).ok("Runtimes fetched", server.Runtimes, http.StatusOK)
 }
@@ -145,8 +148,7 @@ func (ServerController) InstallRuntime(ctx *gin.Context) {
 		respond(ctx).fail("Agent must be online", gin.H{}, http.StatusUnprocessableEntity)
 		return
 	}
-	if server.ProvisionStatus != constants.ProvisionStatusReady {
-		respond(ctx).fail("Provision the server stack first", gin.H{}, http.StatusUnprocessableEntity)
+	if !requireProvisionReady(ctx, server) {
 		return
 	}
 
@@ -206,6 +208,13 @@ func (ServerController) InstallRuntime(ctx *gin.Context) {
 }
 
 func (ServerController) RemoveRuntime(ctx *gin.Context) {
+	server, ok := loadServerForUpdate(ctx)
+	if !ok {
+		return
+	}
+	if !requireProvisionReady(ctx, server) {
+		return
+	}
 	// ponytail: remove jobs not implemented on agent yet
 	respond(ctx).fail("Runtime removal is not available yet", gin.H{}, http.StatusNotImplemented)
 }
@@ -213,6 +222,9 @@ func (ServerController) RemoveRuntime(ctx *gin.Context) {
 func (ServerController) SetRuntimeDefault(ctx *gin.Context) {
 	server, ok := loadServerForUpdate(ctx)
 	if !ok {
+		return
+	}
+	if !requireProvisionReady(ctx, server) {
 		return
 	}
 
@@ -313,6 +325,14 @@ func (ServerController) GetJob(ctx *gin.Context) {
 	}
 
 	respond(ctx).ok("Job fetched", resources.AgentJobResource(job), http.StatusOK)
+}
+
+func requireProvisionReady(ctx *gin.Context, server models.Server) bool {
+	if server.ProvisionStatus == constants.ProvisionStatusReady {
+		return true
+	}
+	respond(ctx).fail("Provision the server stack first", gin.H{}, http.StatusUnprocessableEntity)
+	return false
 }
 
 func loadServerForView(ctx *gin.Context) (models.Server, bool) {
