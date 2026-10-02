@@ -6,6 +6,7 @@ import {
   DEFAULT_PHP_VERSIONS,
   RUNTIME_INSTALL_KIND,
   addonLabel,
+  jobLabel,
   runtimeStatusColor,
   type AgentJob,
   type RuntimeCatalog,
@@ -61,7 +62,7 @@ const addonItems = computed(() =>
 )
 
 function jobSummary(job: AgentJob) {
-  const head = `Job #${job.id} · ${job.status}`
+  const head = jobLabel(job)
   return job.message ? `${head}\n${job.message}` : head
 }
 

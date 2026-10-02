@@ -33,6 +33,7 @@ func Initialize() {
 		&models.Server{},
 		&models.AgentJob{},
 	)
+	_ = (models.AgentJob{}).BackfillUIDs()
 }
 
 func Run() {

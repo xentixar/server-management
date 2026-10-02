@@ -54,7 +54,7 @@ Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
 | Call | Path | Notes |
 |------|------|--------|
 | Heartbeat | `POST /api/v1/agent/heartbeat` | Body: `protocol_version`, `agent_version`, `hostname`. Response bare JSON: `{ ok, protocol_version }` (not the usual `{success,data}` envelope). |
-| Next job | `GET /api/v1/agent/jobs/next` | `204` if none; else `{ id, kind, payload }`. |
+| Next job | `GET /api/v1/agent/jobs/next` | `204` if none; else `{ id, kind, payload }` (`id` is an opaque UUID). |
 | Result | `POST /api/v1/agent/jobs/:id/result` | `{ ok, message, exit_code, secrets? }`. `secrets` carries one-time addon credentials after provision. |
 
 ### Job kinds

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"strconv"
 
 	"api/app/constants"
 	"api/app/models"
@@ -345,8 +344,8 @@ func (ServerController) GetJob(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	jobID, err := strconv.ParseUint(ctx.Param("job"), 10, 64)
-	if err != nil || jobID == 0 {
+	jobID := ctx.Param("job")
+	if jobID == "" {
 		respond(ctx).fail("Invalid job id", gin.H{}, http.StatusBadRequest)
 		return
 	}
@@ -364,7 +363,7 @@ func (ServerController) GetJob(ctx *gin.Context) {
 		return
 	}
 
-	job, err := (models.AgentJob{}).FindForServer(ctx, uint(jobID), serverID)
+	job, err := (models.AgentJob{}).FindByPublicID(ctx, jobID, serverID)
 	if err != nil {
 		respond(ctx).fail("Job not found", gin.H{}, http.StatusNotFound)
 		return

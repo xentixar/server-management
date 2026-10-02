@@ -20,7 +20,7 @@ func AgentJobResource(job models.AgentJob) map[string]any {
 	}
 
 	return map[string]any{
-		"id":          job.ID,
+		"id":          job.PublicID(),
 		"kind":        job.Kind,
 		"payload":     payload,
 		"status":      job.Status,

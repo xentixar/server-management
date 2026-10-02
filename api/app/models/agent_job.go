@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"api/app/constants"
+	"api/app/helpers"
 	"api/config"
 
 	"gorm.io/gorm"
@@ -16,6 +17,7 @@ import (
 
 type AgentJob struct {
 	gorm.Model
+	UID        string         `gorm:"type:varchar(36);index"` // opaque public id; unique in practice via GenerateUID
 	ServerID   uint           `gorm:"not null;index"`
 	Kind       string         `gorm:"type:varchar(64);not null"`
 	Payload    map[string]any `gorm:"serializer:json"`
@@ -29,6 +31,9 @@ type AgentJob struct {
 }
 
 func (j AgentJob) PublicID() string {
+	if j.UID != "" {
+		return j.UID
+	}
 	return strconv.FormatUint(uint64(j.ID), 10)
 }
 
@@ -39,8 +44,13 @@ func (AgentJob) Enqueue(ctx context.Context, serverID uint, kind string, payload
 	if payload == nil {
 		payload = map[string]any{}
 	}
+	uid, err := helpers.GenerateUID()
+	if err != nil {
+		return AgentJob{}, err
+	}
 
 	job := AgentJob{
+		UID:      uid,
 		ServerID: serverID,
 		Kind:     kind,
 		Payload:  payload,
@@ -87,6 +97,25 @@ func (AgentJob) FindForServer(ctx context.Context, id uint, serverID uint) (Agen
 		First(ctx)
 }
 
+func (AgentJob) FindByPublicID(ctx context.Context, publicID string, serverID uint) (AgentJob, error) {
+	if publicID == "" {
+		return AgentJob{}, gorm.ErrRecordNotFound
+	}
+	db := gorm.G[AgentJob](config.GetDatabase())
+	job, err := db.Where("uid = ? AND server_id = ?", publicID, serverID).First(ctx)
+	if err == nil {
+		return job, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return AgentJob{}, err
+	}
+	id, perr := strconv.ParseUint(publicID, 10, 64)
+	if perr != nil || id == 0 {
+		return AgentJob{}, gorm.ErrRecordNotFound
+	}
+	return (AgentJob{}).FindForServer(ctx, uint(id), serverID)
+}
+
 func (AgentJob) HasOpen(ctx context.Context, serverID uint, kind string) (bool, error) {
 	var count int64
 	err := config.GetDatabase().WithContext(ctx).
@@ -113,6 +142,25 @@ func (AgentJob) LatestByKind(ctx context.Context, serverID uint, kind string) (*
 		return nil, err
 	}
 	return &job, nil
+}
+
+// BackfillUIDs assigns opaque uids to legacy rows (needed before unique index is clean).
+func (AgentJob) BackfillUIDs() error {
+	db := config.GetDatabase()
+	var jobs []AgentJob
+	if err := db.Where("uid = ? OR uid IS NULL", "").Find(&jobs).Error; err != nil {
+		return err
+	}
+	for i := range jobs {
+		uid, err := helpers.GenerateUID()
+		if err != nil {
+			return err
+		}
+		if err := db.Model(&jobs[i]).Update("uid", uid).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (j *AgentJob) Complete(ctx context.Context, ok bool, message string, exitCode int) error {

@@ -37,7 +37,7 @@ export interface ProvisionInput {
 }
 
 export interface AgentJob {
-  id: number
+  id: string
   kind: string
   payload: Record<string, unknown>
   status: 'pending' | 'running' | 'succeeded' | 'failed'
@@ -49,7 +49,7 @@ export interface AgentJob {
 }
 
 export interface AgentJobApi {
-  id: number
+  id: string
   kind: string
   payload: Record<string, unknown>
   status: AgentJob['status']
@@ -88,7 +88,7 @@ export function mapRuntimes(data?: Partial<ServerRuntimes> | null): ServerRuntim
 
 export function mapJob(data: AgentJobApi): AgentJob {
   return {
-    id: data.id,
+    id: String(data.id ?? ''),
     kind: data.kind,
     payload: data.payload ?? {},
     status: data.status,
@@ -98,6 +98,11 @@ export function mapJob(data: AgentJobApi): AgentJob {
     finishedAt: data.finished_at,
     createdAt: data.created_at
   }
+}
+
+export function jobLabel(job: Pick<AgentJob, 'id' | 'status'>) {
+  const short = job.id.includes('-') ? job.id.slice(0, 8) : job.id
+  return short ? `${short} · ${job.status}` : job.status
 }
 
 function asStringList(value: unknown): string[] {

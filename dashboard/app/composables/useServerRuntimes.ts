@@ -66,8 +66,8 @@ export function useServerRuntimes(serverId: MaybeRefOrGetter<string | number>) {
     return mapJob(res.data)
   }
 
-  async function getJob(jobId: number) {
-    const res = await api<AgentJobApi>(`${basePath()}/jobs/${jobId}`)
+  async function getJob(jobId: string) {
+    const res = await api<AgentJobApi>(`${basePath()}/jobs/${encodeURIComponent(jobId)}`)
     return mapJob(res.data)
   }
 
@@ -94,7 +94,7 @@ export function useServerRuntimes(serverId: MaybeRefOrGetter<string | number>) {
   }
 
   async function pollJob(
-    jobId: number,
+    jobId: string,
     opts?: {
       intervalMs?: number
       maxAttempts?: number

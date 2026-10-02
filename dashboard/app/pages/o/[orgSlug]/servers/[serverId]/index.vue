@@ -7,6 +7,7 @@ import {
   DEFAULT_NODE_VERSIONS,
   DEFAULT_PHP_VERSIONS,
   provisionBadgeColor,
+  jobLabel,
   selectionFromJobPayload,
   selectionFromRuntimes,
   type AgentJob,
@@ -130,7 +131,7 @@ function syncProvisionForm(job?: AgentJob | null) {
 }
 
 function jobSummary(job: AgentJob) {
-  const head = `Job #${job.id} · ${job.status}`
+  const head = jobLabel(job)
   return job.message ? `${head}\n${job.message}` : head
 }
 
@@ -326,7 +327,7 @@ async function onProvision() {
       ? String(error.data.message)
       : error instanceof Error ? error.message : 'Provision failed'
     activeJob.value = {
-      id: 0,
+      id: '',
       kind: 'server.provision',
       payload: {},
       status: 'failed',
@@ -494,17 +495,14 @@ async function onProvision() {
             :disabled="provisioning || !canProvision"
           />
         </div>
-        <p class="text-muted mt-1 text-xs">
-          MariaDB covers MySQL-compatible apps.
-        </p>
       </div>
 
       <div
-        v-if="activeJob"
+        v-if="activeJob && (activeJob.status === 'pending' || activeJob.status === 'running')"
         class="border-default bg-elevated/40 rounded-md border px-3 py-2"
       >
         <p class="text-highlighted text-xs font-medium">
-          Provision job
+          Provision running
         </p>
         <pre class="text-muted mt-1 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-xs">{{ jobSummary(activeJob) }}</pre>
       </div>
@@ -535,20 +533,6 @@ async function onProvision() {
           />
         </template>
       </UAlert>
-
-      <p
-        v-if="server.provisionStatus === 'ready'"
-        class="text-muted text-xs"
-      >
-        Manage installed versions on the
-        <NuxtLink
-          :to="orgHref(`/servers/${serverId}/runtimes`)"
-          class="text-highlighted underline"
-        >
-          Runtimes
-        </NuxtLink>
-        tab.
-      </p>
     </section>
 
     <section
