@@ -49,6 +49,10 @@ const (
 	FirewallStatusSynced  = "synced"
 	FirewallStatusFailed  = "failed"
 
+	SshKeyStatusPending = "pending"
+	SshKeyStatusSynced  = "synced"
+	SshKeyStatusFailed  = "failed"
+
 	FirewallActionAllow = "allow"
 	FirewallActionDeny  = "deny"
 
@@ -148,6 +152,12 @@ var firewallStatuses = map[string]struct{}{
 	FirewallStatusFailed:  {},
 }
 
+var sshKeyStatuses = map[string]struct{}{
+	SshKeyStatusPending: {},
+	SshKeyStatusSynced:  {},
+	SshKeyStatusFailed:  {},
+}
+
 var firewallActions = map[string]struct{}{
 	FirewallActionAllow: {},
 	FirewallActionDeny:  {},
@@ -181,6 +191,11 @@ func IsValidCronStatus(status string) bool {
 
 func IsValidFirewallStatus(status string) bool {
 	_, ok := firewallStatuses[status]
+	return ok
+}
+
+func IsValidSshKeyStatus(status string) bool {
+	_, ok := sshKeyStatuses[status]
 	return ok
 }
 

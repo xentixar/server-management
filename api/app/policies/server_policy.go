@@ -54,3 +54,11 @@ func (ServerPolicy) ViewFirewall(m models.OrganizationMember) bool {
 func (ServerPolicy) ManageFirewall(m models.OrganizationMember) bool {
 	return Allows(m, constants.FirewallManage)
 }
+
+func (ServerPolicy) ViewSshKeys(m models.OrganizationMember) bool {
+	return Allows(m, constants.SshKeysView)
+}
+
+func (ServerPolicy) ManageSshKeys(m models.OrganizationMember) bool {
+	return Allows(m, constants.SshKeysManage)
+}

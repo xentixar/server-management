@@ -34,6 +34,9 @@ const (
 
 	FirewallView   = "organization.servers.firewall.view"
 	FirewallManage = "organization.servers.firewall.manage"
+
+	SshKeysView   = "organization.servers.ssh_keys.view"
+	SshKeysManage = "organization.servers.ssh_keys.manage"
 )
 
 var AllAbilities = []string{
@@ -62,4 +65,6 @@ var AllAbilities = []string{
 	CronsManage,
 	FirewallView,
 	FirewallManage,
+	SshKeysView,
+	SshKeysManage,
 }

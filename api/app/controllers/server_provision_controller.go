@@ -489,3 +489,11 @@ func loadServerForFirewallView(ctx *gin.Context) (models.Server, bool) {
 func loadServerForFirewallManage(ctx *gin.Context) (models.Server, bool) {
 	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ManageFirewall)
 }
+
+func loadServerForSshKeysView(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ViewSshKeys)
+}
+
+func loadServerForSshKeysManage(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ManageSshKeys)
+}

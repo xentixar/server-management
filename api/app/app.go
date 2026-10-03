@@ -35,6 +35,7 @@ func Initialize() {
 		&models.ServerService{},
 		&models.ServerCron{},
 		&models.ServerFirewallRule{},
+		&models.ServerSshKey{},
 		&models.ServerMetricSample{},
 	)
 	_ = (models.AgentJob{}).BackfillUIDs()

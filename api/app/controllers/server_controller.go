@@ -328,6 +328,7 @@ func (ServerController) Delete(ctx *gin.Context) {
 	_ = (models.ServerService{}).DeleteForServer(ctx, server.ID)
 	_ = (models.ServerCron{}).DeleteForServer(ctx, server.ID)
 	_ = (models.ServerFirewallRule{}).DeleteForServer(ctx, server.ID)
+	_ = (models.ServerSshKey{}).DeleteForServer(ctx, server.ID)
 	_ = (models.ServerMetricSample{}).DeleteForServer(ctx, server.ID)
 
 	if err := server.Delete(ctx); err != nil {

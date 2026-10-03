@@ -56,3 +56,16 @@ func ServerFirewallRuleResource(r models.ServerFirewallRule) map[string]any {
 		"updated_at": r.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
+
+func ServerSshKeyResource(k models.ServerSshKey) map[string]any {
+	return map[string]any{
+		"id":          k.PublicID(),
+		"name":        k.Name,
+		"public_key":  k.PublicKey,
+		"fingerprint": k.Fingerprint,
+		"status":      k.Status,
+		"message":     k.Message,
+		"created_at":  k.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"updated_at":  k.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+	}
+}

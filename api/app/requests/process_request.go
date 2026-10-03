@@ -64,3 +64,13 @@ type UpdateServerFirewallRuleRequest struct {
 	Position  *int    `json:"position"`
 	Enabled   *bool   `json:"enabled"`
 }
+
+type CreateServerSshKeyRequest struct {
+	Name      string `json:"name" binding:"required"`
+	PublicKey string `json:"public_key" binding:"required"`
+}
+
+type UpdateServerSshKeyRequest struct {
+	Name      *string `json:"name"`
+	PublicKey *string `json:"public_key"`
+}

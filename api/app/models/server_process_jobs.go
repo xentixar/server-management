@@ -131,6 +131,28 @@ func applyFirewallJobResult(ctx context.Context, job AgentJob, ok bool, _ map[st
 	return nil
 }
 
+func applySshKeyJobResult(ctx context.Context, job AgentJob, ok bool, _ map[string]any) error {
+	if job.Kind != constants.JobKindSshKeySync {
+		return nil
+	}
+	keys, err := (ServerSshKey{}).ListByServer(ctx, job.ServerID)
+	if err != nil {
+		return err
+	}
+	status := constants.SshKeyStatusSynced
+	if !ok {
+		status = constants.SshKeyStatusFailed
+	}
+	for i := range keys {
+		keys[i].Status = status
+		keys[i].Message = job.Message
+		if err := keys[i].Save(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func ApplyProcessJobResult(ctx context.Context, job AgentJob, ok bool, meta map[string]any) error {
 	switch job.Kind {
 	case constants.JobKindServiceApply, constants.JobKindServiceRemove, constants.JobKindServiceControl:
@@ -139,6 +161,8 @@ func ApplyProcessJobResult(ctx context.Context, job AgentJob, ok bool, meta map[
 		return applyCronJobResult(ctx, job, ok, meta)
 	case constants.JobKindFirewallSync:
 		return applyFirewallJobResult(ctx, job, ok, meta)
+	case constants.JobKindSshKeySync:
+		return applySshKeyJobResult(ctx, job, ok, meta)
 	default:
 		return nil
 	}

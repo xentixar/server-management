@@ -18,6 +18,7 @@ const canViewRuntimes = computed(() => can(Ability.RuntimesView))
 const canViewServices = computed(() => can(Ability.ServicesView))
 const canViewCrons = computed(() => can(Ability.CronsView))
 const canViewFirewall = computed(() => can(Ability.FirewallView))
+const canViewSshKeys = computed(() => can(Ability.SshKeysView))
 
 if (!server.value) {
   await navigateTo(orgHref('/servers'), { replace: true })
@@ -77,10 +78,18 @@ const links = computed(() => {
       disabled: !ready
     })
   }
+  if (canViewSshKeys.value) {
+    items.push({
+      label: 'SSH keys',
+      icon: 'i-lucide-key-round',
+      to: ready ? `${base}/ssh-keys` : undefined,
+      disabled: !ready
+    })
+  }
   return [items]
 })
 
-watch([() => route.path, provisioned, canViewServers, canViewRuntimes, canViewServices, canViewCrons, canViewFirewall], ([path, ready, serversOK, runtimesOK, servicesOK, cronsOK, firewallOK]) => {
+watch([() => route.path, provisioned, canViewServers, canViewRuntimes, canViewServices, canViewCrons, canViewFirewall, canViewSshKeys], ([path, ready, serversOK, runtimesOK, servicesOK, cronsOK, firewallOK, sshKeysOK]) => {
   if (!server.value) {
     return
   }
@@ -91,12 +100,14 @@ watch([() => route.path, provisioned, canViewServers, canViewRuntimes, canViewSe
     || path.startsWith(`${prefix}/services`)
     || path.startsWith(`${prefix}/cron`)
     || path.startsWith(`${prefix}/firewall`)
+    || path.startsWith(`${prefix}/ssh-keys`)
   const blocked = (!ready && needsReady)
     || (!serversOK && path.startsWith(`${prefix}/monitoring`))
     || (!runtimesOK && path.startsWith(`${prefix}/runtimes`))
     || (!servicesOK && path.startsWith(`${prefix}/services`))
     || (!cronsOK && path.startsWith(`${prefix}/cron`))
     || (!firewallOK && path.startsWith(`${prefix}/firewall`))
+    || (!sshKeysOK && path.startsWith(`${prefix}/ssh-keys`))
   if (blocked) {
     navigateTo(prefix, { replace: true })
   }

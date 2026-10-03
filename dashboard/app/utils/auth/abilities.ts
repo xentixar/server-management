@@ -23,7 +23,9 @@ export const Ability = {
   CronsView: 'organization.servers.crons.view',
   CronsManage: 'organization.servers.crons.manage',
   FirewallView: 'organization.servers.firewall.view',
-  FirewallManage: 'organization.servers.firewall.manage'
+  FirewallManage: 'organization.servers.firewall.manage',
+  SshKeysView: 'organization.servers.ssh_keys.view',
+  SshKeysManage: 'organization.servers.ssh_keys.manage'
 } as const
 
 export type Ability = typeof Ability[keyof typeof Ability]

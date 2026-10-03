@@ -37,6 +37,8 @@ var RolePermissions = map[string][]string{
 		CronsManage,
 		FirewallView,
 		FirewallManage,
+		SshKeysView,
+		SshKeysManage,
 	},
 	ViewerRole: {
 		OrganizationList,
@@ -49,6 +51,7 @@ var RolePermissions = map[string][]string{
 		ServicesView,
 		CronsView,
 		FirewallView,
+		SshKeysView,
 	},
 }
 
