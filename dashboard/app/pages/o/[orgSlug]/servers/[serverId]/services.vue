@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
 import { ApiError } from '~/utils/api'
 import { Ability } from '~/utils/auth/abilities'
 import type { AgentJob } from '~/utils/runtimes'
@@ -113,13 +114,51 @@ function openEdit(svc: ServerService) {
   formOpen.value = true
 }
 
+function menuItems(svc: ServerService): DropdownMenuItem[][] {
+  return [[{
+    label: 'Start',
+    icon: 'i-lucide-play',
+    disabled: !canManage.value || busy.value,
+    onSelect: () => {
+      void onControl(svc, 'start')
+    }
+  }, {
+    label: 'Stop',
+    icon: 'i-lucide-square',
+    disabled: !canManage.value || busy.value,
+    onSelect: () => {
+      void onControl(svc, 'stop')
+    }
+  }, {
+    label: 'Restart',
+    icon: 'i-lucide-refresh-cw',
+    disabled: !canManage.value || busy.value,
+    onSelect: () => {
+      void onControl(svc, 'restart')
+    }
+  }], [{
+    label: 'Logs',
+    icon: 'i-lucide-scroll-text',
+    disabled: !canViewLogs.value || busy.value,
+    onSelect: () => {
+      void openLogs(svc)
+    }
+  }, {
+    label: 'Edit',
+    icon: 'i-lucide-pencil',
+    disabled: !canManage.value || busy.value,
+    onSelect: () => openEdit(svc)
+  }, {
+    label: 'Delete',
+    icon: 'i-lucide-trash-2',
+    color: 'error',
+    disabled: !canManage.value || busy.value,
+    onSelect: () => confirmDelete(svc)
+  }]]
+}
+
 async function track(job: AgentJob) {
-  busy.value = true
-  try {
-    return await pollJob(job.id)
-  } finally {
-    busy.value = false
-  }
+  return await pollJob(job.id)
 }
 
 async function onSubmit() {
@@ -165,10 +204,11 @@ async function onSubmit() {
       color: done?.status === 'succeeded' ? 'success' : 'error'
     })
   } catch (error) {
-    busy.value = false
     const detail = error instanceof ApiError ? error.message : 'Request failed'
     toast.add({ title: detail, color: 'error' })
     await fetchAll()
+  } finally {
+    busy.value = false
   }
 }
 
@@ -186,14 +226,12 @@ async function onControl(svc: ServerService, action: ServiceControlAction) {
       description: done?.message || done?.status,
       color: done?.status === 'succeeded' ? 'success' : 'error'
     })
-    if (done?.status === 'succeeded') {
-      expanded.value = svc.id
-    }
   } catch (error) {
-    busy.value = false
     const detail = error instanceof ApiError ? error.message : 'Control failed'
     toast.add({ title: detail, color: 'error' })
     await fetchAll()
+  } finally {
+    busy.value = false
   }
 }
 
@@ -213,11 +251,11 @@ async function openLogs(svc: ServerService, opts?: { keepTab?: boolean }) {
     await fetchAll()
     await track(res.job)
   } catch (error) {
-    busy.value = false
     const detail = error instanceof ApiError ? error.message : 'Failed to load logs'
     toast.add({ title: detail, color: 'error' })
     await fetchAll()
   } finally {
+    busy.value = false
     logsLoading.value = false
   }
 }
@@ -244,11 +282,11 @@ async function onDelete() {
       color: done?.status === 'succeeded' ? 'success' : 'error'
     })
   } catch (error) {
-    busy.value = false
     const detail = error instanceof ApiError ? error.message : 'Delete failed'
     toast.add({ title: detail, color: 'error' })
     await fetchAll()
   } finally {
+    busy.value = false
     toDelete.value = null
   }
 }
@@ -363,59 +401,18 @@ async function onDelete() {
               </template>
             </p>
           </div>
-          <UButton
-            label="Logs"
-            size="xs"
-            color="primary"
-            variant="soft"
-            class="shrink-0"
-            :disabled="!canViewLogs || busy"
-            @click="openLogs(svc)"
-          />
-        </div>
-        <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t border-default pt-3">
-          <UButton
-            label="Start"
-            size="xs"
-            color="neutral"
-            variant="outline"
-            :disabled="!canManage || busy"
-            @click="onControl(svc, 'start')"
-          />
-          <UButton
-            label="Stop"
-            size="xs"
-            color="neutral"
-            variant="outline"
-            :disabled="!canManage || busy"
-            @click="onControl(svc, 'stop')"
-          />
-          <UButton
-            label="Restart"
-            size="xs"
-            color="neutral"
-            variant="outline"
-            :disabled="!canManage || busy"
-            @click="onControl(svc, 'restart')"
-          />
-          <div class="ml-auto flex items-center gap-1">
+          <UDropdownMenu
+            :items="menuItems(svc)"
+            :content="{ align: 'end' }"
+          >
             <UButton
-              icon="i-lucide-pencil"
+              icon="i-lucide-ellipsis-vertical"
               size="xs"
               color="neutral"
               variant="ghost"
-              :disabled="!canManage || busy"
-              @click="openEdit(svc)"
+              aria-label="Service actions"
             />
-            <UButton
-              icon="i-lucide-trash-2"
-              size="xs"
-              color="error"
-              variant="ghost"
-              :disabled="!canManage || busy"
-              @click="confirmDelete(svc)"
-            />
-          </div>
+          </UDropdownMenu>
         </div>
       </li>
     </ul>

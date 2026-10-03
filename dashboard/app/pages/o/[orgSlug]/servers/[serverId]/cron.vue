@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
 import { ApiError } from '~/utils/api'
 import { Ability } from '~/utils/auth/abilities'
 import type { AgentJob } from '~/utils/runtimes'
@@ -82,6 +83,28 @@ function openEdit(cron: ServerCron) {
   form.timezone = cron.timezone
   form.enabled = cron.enabled
   formOpen.value = true
+}
+
+function menuItems(cron: ServerCron): DropdownMenuItem[][] {
+  return [[{
+    label: 'Logs',
+    icon: 'i-lucide-scroll-text',
+    disabled: !canViewLogs.value || busy.value,
+    onSelect: () => {
+      void openLogs(cron)
+    }
+  }, {
+    label: 'Edit',
+    icon: 'i-lucide-pencil',
+    disabled: !canManage.value || busy.value,
+    onSelect: () => openEdit(cron)
+  }, {
+    label: 'Delete',
+    icon: 'i-lucide-trash-2',
+    color: 'error',
+    disabled: !canManage.value || busy.value,
+    onSelect: () => confirmDelete(cron)
+  }]]
 }
 
 async function track(job: AgentJob) {
@@ -308,33 +331,18 @@ async function onDelete() {
               {{ cron.user }}
             </p>
           </div>
-          <UButton
-            label="Logs"
-            size="xs"
-            color="primary"
-            variant="soft"
-            class="shrink-0"
-            :disabled="!canViewLogs || busy"
-            @click="openLogs(cron)"
-          />
-        </div>
-        <div class="mt-3 flex items-center justify-end gap-1 border-t border-default pt-3">
-          <UButton
-            icon="i-lucide-pencil"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            :disabled="!canManage || busy"
-            @click="openEdit(cron)"
-          />
-          <UButton
-            icon="i-lucide-trash-2"
-            size="xs"
-            color="error"
-            variant="ghost"
-            :disabled="!canManage || busy"
-            @click="confirmDelete(cron)"
-          />
+          <UDropdownMenu
+            :items="menuItems(cron)"
+            :content="{ align: 'end' }"
+          >
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              aria-label="Cron actions"
+            />
+          </UDropdownMenu>
         </div>
       </li>
     </ul>
