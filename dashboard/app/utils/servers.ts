@@ -24,7 +24,6 @@ export interface Server {
   runtimes: ServerRuntimes
   sites: number
   createdAt: string
-  agentToken?: string
   bootstrap?: {
     ok: boolean
     message: string
@@ -66,7 +65,6 @@ export interface ServerApi {
   runtimes?: ServerRuntimes
   sites: number
   created_at: string
-  agent_token?: string
   bootstrap?: {
     ok: boolean
     message: string
@@ -95,7 +93,6 @@ export function mapServer(data: ServerApi): Server {
     runtimes: mapRuntimes(data.runtimes),
     sites: data.sites ?? 0,
     createdAt: data.created_at,
-    agentToken: data.agent_token,
     bootstrap: data.bootstrap
   }
 }

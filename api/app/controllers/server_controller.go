@@ -333,7 +333,7 @@ func (ServerController) Delete(ctx *gin.Context) {
 		return
 	}
 
-	msg := "Server deleted"
+	msg := ""
 	if cleanup.OK {
 		msg = "Server deleted and agent removed from host"
 	} else {

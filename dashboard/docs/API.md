@@ -37,7 +37,7 @@ Use **`useApi().api<T>(path, options)`** for all authenticated control-plane req
 
 - `await fetchAll()` on org home and servers pages.
 - Create body uses snake_case fields (`ssh_port`, `auth_method`, `private_key`, …).
-- Create response may include `bootstrap: { ok, message }` and one-time `agent_token`.
+- Create response may include `bootstrap: { ok, message }`.
 - Abilities: `organization.servers.view|create|update|delete`, plus `organization.servers.{runtimes,services,crons}.{view,manage}`.
 
 ## Types & abilities

@@ -27,19 +27,19 @@ func ServerResource(data models.Server) map[string]any {
 	}
 
 	return map[string]any{
-		"id":               data.ID,
-		"hostname":         data.Hostname,
-		"ip":               data.IPAddress,
-		"ssh_port":         data.SSHPort,
-		"ssh_user":         data.SSHUser,
-		"auth_method":      data.AuthenticationMethod,
-		"has_key":          data.PrivateKey != "",
-		"region":           data.Region,
-		"labels":           labels,
-		"notes":            data.Notes,
-		"agent":            data.EffectiveAgentStatus(),
-		"agent_version":    data.AgentVersion,
-		"last_seen_at":     lastSeenAt,
+		"id":                    data.ID,
+		"hostname":              data.Hostname,
+		"ip":                    data.IPAddress,
+		"ssh_port":              data.SSHPort,
+		"ssh_user":              data.SSHUser,
+		"auth_method":           data.AuthenticationMethod,
+		"has_key":               data.PrivateKey != "",
+		"region":                data.Region,
+		"labels":                labels,
+		"notes":                 data.Notes,
+		"agent":                 data.EffectiveAgentStatus(),
+		"agent_version":         data.AgentVersion,
+		"last_seen_at":          lastSeenAt,
 		"provision_status":      data.ProvisionStatus,
 		"provisioned_at":        provisionedAt,
 		"has_provision_secrets": data.HasProvisionSecrets(),
@@ -50,10 +50,8 @@ func ServerResource(data models.Server) map[string]any {
 	}
 }
 
-// ServerCreatedResource includes agent_token once at create time for bootstrap.
 func ServerCreatedResource(data models.Server, bootstrap map[string]any) map[string]any {
 	out := ServerResource(data)
-	out["agent_token"] = data.AgentToken
 	if bootstrap != nil {
 		out["bootstrap"] = bootstrap
 	}
