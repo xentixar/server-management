@@ -23,7 +23,7 @@ UI mapping: [dashboard/docs/DESIGN.md](../dashboard/docs/DESIGN.md).
 | Deployments & zero-downtime | Planned | |
 | Runtime & version management | Planned | |
 | Background services & cron | Done | Supervisor + server-wide cron; site-scoped later |
-| Logs & observability | Planned | Metrics/alerts: **Future** |
+| Logs & observability | Partial | Host metric charts Done; logs/alerts Future |
 | Nginx & web server | Planned | |
 | Database manager | Planned | |
 | Domains & SSL | Planned | |
@@ -176,7 +176,7 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 #### Server detail
 
 - Status, agent version, last seen. **Partial** (status + version/last seen in API; UI overview still thin).
-- CPU/memory/disk (**Future** metrics depth).
+- CPU/memory/disk/load charts (**Done** via agent heartbeat samples + Monitoring tab).
 - Installed runtimes summary, linked sites count. **Planned** (sites stub only).
 - Reinstall agent, decommission server (with confirmation). Reinstall via bootstrap; delete **Done**.
 
@@ -319,9 +319,15 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 - Live tail, pause, download chunk, filter by level/text/time range.
 - Retention policy per plan (**Planned**).
 
+### Host metrics (Done for v1)
+
+- Agent samples CPU %, memory, root disk, load on each heartbeat.
+- API stores samples (7-day retention) and serves ranged series.
+- Dashboard Monitoring tab: gauges + charts (`1h` / `6h` / `24h` / `7d`).
+
 ### Future
 
-- Metric charts (CPU, memory, request rate), alerting rules, PagerDuty/Slack integrations.
+- Request-rate metrics, alerting rules, PagerDuty/Slack integrations.
 
 ---
 

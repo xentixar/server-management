@@ -31,6 +31,7 @@ Use **`useApi().api<T>(path, options)`** for all authenticated control-plane req
 | `useMembers` | Members + invites for selected org |
 | `useGate` | `can` / `cannot` over `selected.permissions` |
 | `useServers` | List/create/delete/testConnection/bootstrap against API |
+| `useServerMetrics` | Host metrics series for Monitoring tab |
 | `useSites` / `useBilling` | Local stubs until those APIs land |
 
 ### Servers
@@ -39,6 +40,7 @@ Use **`useApi().api<T>(path, options)`** for all authenticated control-plane req
 - Create body uses snake_case fields (`ssh_port`, `auth_method`, `private_key`, …).
 - Create response may include `bootstrap: { ok, message }`.
 - Abilities: `organization.servers.view|create|update|delete`, plus `organization.servers.{runtimes,services,crons}.{view,manage}`.
+- Metrics: `GET …/servers/:id/metrics?range=1h|6h|24h|7d` → `{ latest, series }` (gated by `servers.view`). Types in `app/utils/metrics.ts`.
 
 ## Types & abilities
 

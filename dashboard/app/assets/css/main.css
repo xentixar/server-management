@@ -7,6 +7,19 @@
   --ui-text-dimmed: var(--ui-text-muted);
 }
 
+/*
+ * Unovis injects axis vars on :root at runtime (same specificity as .dark),
+ * so use html.dark + !important. Also set on chart wrappers in MetricLineChart.
+ */
+html.dark {
+  --vis-axis-grid-color: rgb(255 255 255 / 0.06) !important;
+  --vis-axis-grid-opacity: 1 !important;
+  --vis-axis-tick-color: rgb(255 255 255 / 0.08) !important;
+  --vis-axis-domain-color: rgb(255 255 255 / 0.08) !important;
+  --vis-axis-tick-label-color: var(--ui-text-muted) !important;
+  --vis-axis-label-color: var(--ui-text-muted) !important;
+}
+
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
 

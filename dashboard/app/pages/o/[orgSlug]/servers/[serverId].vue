@@ -13,6 +13,7 @@ await fetchAll()
 const serverId = computed(() => String(route.params.serverId || ''))
 const server = computed(() => getById(serverId.value))
 const provisioned = computed(() => server.value?.provisionStatus === 'ready')
+const canViewServers = computed(() => can(Ability.ServersView))
 const canViewRuntimes = computed(() => can(Ability.RuntimesView))
 const canViewServices = computed(() => can(Ability.ServicesView))
 const canViewCrons = computed(() => can(Ability.CronsView))
@@ -35,6 +36,14 @@ const links = computed(() => {
     to: ready ? `${base}/sites` : undefined,
     disabled: !ready
   }]
+  if (canViewServers.value) {
+    items.push({
+      label: 'Monitoring',
+      icon: 'i-lucide-activity',
+      to: ready ? `${base}/monitoring` : undefined,
+      disabled: !ready
+    })
+  }
   if (canViewRuntimes.value) {
     items.push({
       label: 'Runtimes',
@@ -62,17 +71,18 @@ const links = computed(() => {
   return [items]
 })
 
-watch([() => route.path, provisioned, canViewRuntimes, canViewServices, canViewCrons], ([path, ready, runtimesOK, servicesOK, cronsOK]) => {
+watch([() => route.path, provisioned, canViewServers, canViewRuntimes, canViewServices, canViewCrons], ([path, ready, serversOK, runtimesOK, servicesOK, cronsOK]) => {
   if (!server.value) {
     return
   }
   const prefix = orgHref(`/servers/${serverId.value}`)
-  const blocked = (!ready && (
-    path.startsWith(`${prefix}/sites`)
+  const needsReady = path.startsWith(`${prefix}/sites`)
+    || path.startsWith(`${prefix}/monitoring`)
     || path.startsWith(`${prefix}/runtimes`)
     || path.startsWith(`${prefix}/services`)
     || path.startsWith(`${prefix}/cron`)
-  ))
+  const blocked = (!ready && needsReady)
+    || (!serversOK && path.startsWith(`${prefix}/monitoring`))
     || (!runtimesOK && path.startsWith(`${prefix}/runtimes`))
     || (!servicesOK && path.startsWith(`${prefix}/services`))
     || (!cronsOK && path.startsWith(`${prefix}/cron`))

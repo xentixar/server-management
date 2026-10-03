@@ -327,6 +327,7 @@ func (ServerController) Delete(ctx *gin.Context) {
 	_ = (models.AgentJob{}).DeleteForServer(ctx, server.ID)
 	_ = (models.ServerService{}).DeleteForServer(ctx, server.ID)
 	_ = (models.ServerCron{}).DeleteForServer(ctx, server.ID)
+	_ = (models.ServerMetricSample{}).DeleteForServer(ctx, server.ID)
 
 	if err := server.Delete(ctx); err != nil {
 		respond(ctx).fail("Failed to delete server", gin.H{}, 500)

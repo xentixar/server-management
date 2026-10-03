@@ -10,6 +10,7 @@ import (
 
 	"agent/internal/client"
 	"agent/internal/executor"
+	"agent/internal/metrics"
 	"agent/internal/protocol"
 )
 
@@ -26,10 +27,11 @@ type Options struct {
 }
 
 type Loop struct {
-	api  ControlPlane
-	exec *executor.Executor
-	opts Options
-	log  *slog.Logger
+	api     ControlPlane
+	exec    *executor.Executor
+	opts    Options
+	log     *slog.Logger
+	metrics *metrics.Collector
 }
 
 func New(api ControlPlane, exec *executor.Executor, opts Options, log *slog.Logger) *Loop {
@@ -42,7 +44,7 @@ func New(api ControlPlane, exec *executor.Executor, opts Options, log *slog.Logg
 	if exec == nil {
 		exec = executor.Default()
 	}
-	return &Loop{api: api, exec: exec, opts: opts, log: log}
+	return &Loop{api: api, exec: exec, opts: opts, log: log, metrics: &metrics.Collector{}}
 }
 
 // Run blocks until ctx is cancelled. Transient API errors are logged and retried.
@@ -80,6 +82,7 @@ func (l *Loop) heartbeat(ctx context.Context) {
 		ProtocolVersion: protocol.Version,
 		AgentVersion:    protocol.AgentVersion,
 		Hostname:        l.opts.Hostname,
+		Metrics:         l.metrics.Sample(),
 	})
 	if err != nil {
 		if errors.Is(err, client.ErrUnauthorized) {

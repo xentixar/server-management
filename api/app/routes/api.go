@@ -47,6 +47,7 @@ func Register(router *gin.RouterGroup) {
 		group.POST("/:organization/servers/test-connection", servers.TestConnection)
 		group.POST("/:organization/servers", servers.Create)
 		group.GET("/:organization/servers/:server", servers.Get)
+		group.GET("/:organization/servers/:server/metrics", servers.GetMetrics)
 		group.POST("/:organization/servers/:server/bootstrap", servers.Bootstrap)
 		group.POST("/:organization/servers/:server/provision", servers.Provision)
 		group.GET("/:organization/servers/:server/provision-secrets", servers.GetProvisionSecrets)

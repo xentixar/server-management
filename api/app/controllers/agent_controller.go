@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"api/app/constants"
 	"api/app/models"
@@ -26,6 +27,17 @@ func (AgentController) Heartbeat(ctx *gin.Context) {
 	if err := server.RecordHeartbeat(ctx, req.AgentVersion); err != nil {
 		respond(ctx).fail("Failed to record heartbeat", gin.H{}, http.StatusInternalServerError)
 		return
+	}
+
+	if req.Metrics != nil && !req.Metrics.Empty() {
+		at := time.Now().UTC()
+		if server.LastSeenAt != nil {
+			at = server.LastSeenAt.UTC()
+		}
+		if err := (models.ServerMetricSample{}).InsertFromHeartbeat(ctx, server.ID, at, req.Metrics); err != nil {
+			// Heartbeat already succeeded; do not fail the agent over metrics storage.
+			_ = err
+		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{

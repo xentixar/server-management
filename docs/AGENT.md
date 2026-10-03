@@ -57,7 +57,7 @@ Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
 
 | Call | Path | Notes |
 |------|------|--------|
-| Heartbeat | `POST /api/v1/agent/heartbeat` | Body: `protocol_version`, `agent_version`, `hostname`. Response bare JSON: `{ ok, protocol_version }` (not the usual `{success,data}` envelope). API marks the server online and stamps `last_seen_at`; list/get derive `online` (≤45s) / `degraded` (≤2m) / `offline` from that stamp so a stopped host does not stay green. |
+| Heartbeat | `POST /api/v1/agent/heartbeat` | Body: `protocol_version`, `agent_version`, `hostname`, optional `metrics` (`cpu_percent`, `mem_*_bytes`, `disk_*_bytes`, `load1`/`load5`/`load15`). Response bare JSON: `{ ok, protocol_version }` (not the usual `{success,data}` envelope). API marks the server online, stamps `last_seen_at`, and stores a metric sample when `metrics` is present (7-day retention). List/get derive `online` (≤45s) / `degraded` (≤2m) / `offline` from that stamp so a stopped host does not stay green. Org UI: `GET …/servers/:id/metrics?range=` with `1h`, `6h`, `24h`, or `7d`. |
 | Next job | `GET /api/v1/agent/jobs/next` | `204` if none; else `{ id, kind, payload }` (`id` is an opaque UUID). |
 | Result | `POST /api/v1/agent/jobs/:id/result` | `{ ok, message, exit_code, secrets? }`. `secrets` carries one-time addon credentials after provision, or service `status` / log tails after service jobs. |
 
@@ -90,6 +90,7 @@ agent/
   internal/protocol/      # wire types + version
   internal/client/        # HTTP
   internal/loop/          # heartbeat + poll
+  internal/metrics/       # host CPU/mem/disk/load for heartbeat
   internal/executor/      # job handlers (ping, provision, runtimes, services, cron)
 ```
 

@@ -87,7 +87,7 @@ Dashboard-specific tasks: [dashboard/docs/ROADMAP.md](../dashboard/docs/ROADMAP.
 
 | Item | Notes |
 |------|--------|
-| Metrics & alerting | CPU, disk, HTTP error rate |
+| Metrics & alerting | Host charts Done; alerting + HTTP error rate still open |
 | OAuth login | GitHub/Google |
 | Additional providers | Hetzner, Linode, etc. |
 | Remote builders | Build off-server |
