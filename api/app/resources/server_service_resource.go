@@ -37,3 +37,22 @@ func ServerCronResource(c models.ServerCron) map[string]any {
 		"updated_at": c.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
+
+func ServerFirewallRuleResource(r models.ServerFirewallRule) map[string]any {
+	return map[string]any{
+		"id":         r.PublicID(),
+		"name":       r.Name,
+		"action":     r.Action,
+		"direction":  r.Direction,
+		"protocol":   r.Protocol,
+		"port_start": r.PortStart,
+		"port_end":   r.PortEnd,
+		"source":     r.Source,
+		"position":   r.Position,
+		"enabled":    r.Enabled,
+		"status":     r.Status,
+		"message":    r.Message,
+		"created_at": r.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"updated_at": r.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+	}
+}

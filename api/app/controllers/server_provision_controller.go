@@ -481,3 +481,11 @@ func loadServerForCronsView(ctx *gin.Context) (models.Server, bool) {
 func loadServerForCronsManage(ctx *gin.Context) (models.Server, bool) {
 	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ManageCrons)
 }
+
+func loadServerForFirewallView(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ViewFirewall)
+}
+
+func loadServerForFirewallManage(ctx *gin.Context) (models.Server, bool) {
+	return loadServerForFeature(ctx, (policies.ServerPolicy{}).ManageFirewall)
+}

@@ -77,7 +77,7 @@ Dashboard-specific tasks: [dashboard/docs/ROADMAP.md](../dashboard/docs/ROADMAP.
 
 | Dashboard | API | Agent | TF |
 |-----------|-----|-------|-----|
-| Runtimes, cron, SSL, DB, network UIs | Matching CRUD + jobs | Nginx, ACME, firewall, services | — |
+| Runtimes, cron, SSL, DB, network UIs | Matching CRUD + jobs (firewall Done) | Nginx, ACME, firewall (Done), services | — |
 
 **Exit criteria:** Laravel/Next/Nuxt-style site with SSL, cron, zero-downtime deploy, and DB without SSH.
 

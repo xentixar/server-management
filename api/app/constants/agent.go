@@ -21,4 +21,5 @@ const (
 	JobKindServiceControl = "service.control"
 	JobKindCronSync       = "cron.sync"
 	JobKindCronLogs       = "cron.logs"
+	JobKindFirewallSync   = "firewall.sync"
 )

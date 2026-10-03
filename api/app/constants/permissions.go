@@ -31,6 +31,9 @@ const (
 
 	CronsView   = "organization.servers.crons.view"
 	CronsManage = "organization.servers.crons.manage"
+
+	FirewallView   = "organization.servers.firewall.view"
+	FirewallManage = "organization.servers.firewall.manage"
 )
 
 var AllAbilities = []string{
@@ -57,4 +60,6 @@ var AllAbilities = []string{
 	ServicesManage,
 	CronsView,
 	CronsManage,
+	FirewallView,
+	FirewallManage,
 }

@@ -118,7 +118,7 @@ The agent will maintain **desired state** from the control plane:
 | Runtimes | Install Node/PHP | Done |
 | Cron / services | Supervisor + `/etc/cron.d/sa` | Done (server-wide) |
 | Logs | Tail → API | Planned |
-| Firewall | Apply rules | TBD |
+| Firewall | Apply inbound rules (`firewall.sync` → iptables `SA-FW`) | Done (server-scoped) |
 
 ## Terraform provisioning flow (planned)
 

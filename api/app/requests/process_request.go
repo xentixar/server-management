@@ -40,3 +40,27 @@ type UpdateServerCronRequest struct {
 	Timezone *string `json:"timezone"`
 	Enabled  *bool   `json:"enabled"`
 }
+
+type CreateServerFirewallRuleRequest struct {
+	Name      string `json:"name"`
+	Action    string `json:"action" binding:"required"`
+	Direction string `json:"direction"`
+	Protocol  string `json:"protocol" binding:"required"`
+	PortStart *int   `json:"port_start"`
+	PortEnd   *int   `json:"port_end"`
+	Source    string `json:"source"`
+	Position  *int   `json:"position"`
+	Enabled   *bool  `json:"enabled"`
+}
+
+type UpdateServerFirewallRuleRequest struct {
+	Name      *string `json:"name"`
+	Action    *string `json:"action"`
+	Direction *string `json:"direction"`
+	Protocol  *string `json:"protocol"`
+	PortStart *int    `json:"port_start"`
+	PortEnd   *int    `json:"port_end"`
+	Source    *string `json:"source"`
+	Position  *int    `json:"position"`
+	Enabled   *bool   `json:"enabled"`
+}

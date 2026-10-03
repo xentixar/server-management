@@ -45,6 +45,20 @@ const (
 	CronStatusSynced  = "synced"
 	CronStatusFailed  = "failed"
 
+	FirewallStatusPending = "pending"
+	FirewallStatusSynced  = "synced"
+	FirewallStatusFailed  = "failed"
+
+	FirewallActionAllow = "allow"
+	FirewallActionDeny  = "deny"
+
+	FirewallDirectionInbound = "inbound"
+
+	FirewallProtoTCP  = "tcp"
+	FirewallProtoUDP  = "udp"
+	FirewallProtoICMP = "icmp"
+	FirewallProtoAny  = "any"
+
 	// DefaultProcessUser is the managed non-root Unix account created at provision (not a product brand).
 	DefaultProcessUser = "sm"
 	DefaultCronTZ      = "UTC"
@@ -128,6 +142,28 @@ var cronStatuses = map[string]struct{}{
 	CronStatusFailed:  {},
 }
 
+var firewallStatuses = map[string]struct{}{
+	FirewallStatusPending: {},
+	FirewallStatusSynced:  {},
+	FirewallStatusFailed:  {},
+}
+
+var firewallActions = map[string]struct{}{
+	FirewallActionAllow: {},
+	FirewallActionDeny:  {},
+}
+
+var firewallDirections = map[string]struct{}{
+	FirewallDirectionInbound: {},
+}
+
+var firewallProtocols = map[string]struct{}{
+	FirewallProtoTCP:  {},
+	FirewallProtoUDP:  {},
+	FirewallProtoICMP: {},
+	FirewallProtoAny:  {},
+}
+
 func IsValidServiceStatus(status string) bool {
 	_, ok := serviceStatuses[status]
 	return ok
@@ -140,5 +176,25 @@ func IsValidServiceControl(action string) bool {
 
 func IsValidCronStatus(status string) bool {
 	_, ok := cronStatuses[status]
+	return ok
+}
+
+func IsValidFirewallStatus(status string) bool {
+	_, ok := firewallStatuses[status]
+	return ok
+}
+
+func IsValidFirewallAction(action string) bool {
+	_, ok := firewallActions[action]
+	return ok
+}
+
+func IsValidFirewallDirection(direction string) bool {
+	_, ok := firewallDirections[direction]
+	return ok
+}
+
+func IsValidFirewallProtocol(protocol string) bool {
+	_, ok := firewallProtocols[protocol]
 	return ok
 }

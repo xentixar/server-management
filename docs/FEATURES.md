@@ -27,7 +27,7 @@ UI mapping: [dashboard/docs/DESIGN.md](../dashboard/docs/DESIGN.md).
 | Nginx & web server | Planned | |
 | Database manager | Planned | |
 | Domains & SSL | Planned | |
-| Site network & access | Planned | |
+| Site network & access | Partial | Server firewall Done; redirects / site scope Planned |
 | Activity & notifications (product) | Planned | |
 
 ---
@@ -397,22 +397,23 @@ Owners cannot be removed without ownership transfer. At least one owner per org.
 
 ## 14. Site network & access
 
-**Status:** Planned
+**Status:** Partial — server firewall **Done**; redirects / basic auth / site scope **Planned**.
 
 ### User goals
 
-- Control who can reach the site and how traffic is shaped.
+- Control who can reach the server (and later the site) and how traffic is shaped.
 
 ### Key actions
 
-- **Firewall**: allow/deny IP ranges, optional port rules at server or site scope.
-- **Redirects**: 301/302 rules, apex ↔ www.
-- **Access protection**: HTTP basic auth or password gate for staging.
-- Rate limiting (**Future**).
+- **Firewall (server)**: allow/deny inbound rules by protocol, port/range, and source CIDR. **Done**.
+- **Redirects**: 301/302 rules, apex ↔ www. **Planned**.
+- **Access protection**: HTTP basic auth or password gate for staging. **Planned**.
+- Rate limiting (**Future**). Site-scoped firewall (**Future**).
 
 ### Notes for backend / agent
 
-- Firewall rules applied via agent (iptables/nftables or cloud firewall API **TBD**).
+- Job kind: `firewall.sync` with `{ ssh_port, rules[] }`. Agent materializes iptables chain `SA-FW` (jump from `INPUT`), always allows established/related, loopback, and the server SSH port. Rules persist via `/etc/server-agent/firewall.v4` + `server-agent-firewall.service`.
+- API: `GET/POST/PATCH/DELETE …/firewall/rules`, `POST …/firewall/sync`. Permissions: `organization.servers.firewall.view|manage`.
 - Redirects may live in Nginx config generated from site network settings.
 
 ---

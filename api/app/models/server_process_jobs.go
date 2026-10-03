@@ -109,12 +109,36 @@ func applyCronJobResult(ctx context.Context, job AgentJob, ok bool, meta map[str
 	return nil
 }
 
+func applyFirewallJobResult(ctx context.Context, job AgentJob, ok bool, _ map[string]any) error {
+	if job.Kind != constants.JobKindFirewallSync {
+		return nil
+	}
+	rules, err := (ServerFirewallRule{}).ListByServer(ctx, job.ServerID)
+	if err != nil {
+		return err
+	}
+	status := constants.FirewallStatusSynced
+	if !ok {
+		status = constants.FirewallStatusFailed
+	}
+	for i := range rules {
+		rules[i].Status = status
+		rules[i].Message = job.Message
+		if err := rules[i].Save(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func ApplyProcessJobResult(ctx context.Context, job AgentJob, ok bool, meta map[string]any) error {
 	switch job.Kind {
 	case constants.JobKindServiceApply, constants.JobKindServiceRemove, constants.JobKindServiceControl:
 		return applyServiceJobResult(ctx, job, ok, meta)
 	case constants.JobKindCronSync, constants.JobKindCronLogs:
 		return applyCronJobResult(ctx, job, ok, meta)
+	case constants.JobKindFirewallSync:
+		return applyFirewallJobResult(ctx, job, ok, meta)
 	default:
 		return nil
 	}

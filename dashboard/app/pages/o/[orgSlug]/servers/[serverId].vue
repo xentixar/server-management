@@ -17,6 +17,7 @@ const canViewServers = computed(() => can(Ability.ServersView))
 const canViewRuntimes = computed(() => can(Ability.RuntimesView))
 const canViewServices = computed(() => can(Ability.ServicesView))
 const canViewCrons = computed(() => can(Ability.CronsView))
+const canViewFirewall = computed(() => can(Ability.FirewallView))
 
 if (!server.value) {
   await navigateTo(orgHref('/servers'), { replace: true })
@@ -68,10 +69,18 @@ const links = computed(() => {
       disabled: !ready
     })
   }
+  if (canViewFirewall.value) {
+    items.push({
+      label: 'Firewall',
+      icon: 'i-lucide-shield',
+      to: ready ? `${base}/firewall` : undefined,
+      disabled: !ready
+    })
+  }
   return [items]
 })
 
-watch([() => route.path, provisioned, canViewServers, canViewRuntimes, canViewServices, canViewCrons], ([path, ready, serversOK, runtimesOK, servicesOK, cronsOK]) => {
+watch([() => route.path, provisioned, canViewServers, canViewRuntimes, canViewServices, canViewCrons, canViewFirewall], ([path, ready, serversOK, runtimesOK, servicesOK, cronsOK, firewallOK]) => {
   if (!server.value) {
     return
   }
@@ -81,11 +90,13 @@ watch([() => route.path, provisioned, canViewServers, canViewRuntimes, canViewSe
     || path.startsWith(`${prefix}/runtimes`)
     || path.startsWith(`${prefix}/services`)
     || path.startsWith(`${prefix}/cron`)
+    || path.startsWith(`${prefix}/firewall`)
   const blocked = (!ready && needsReady)
     || (!serversOK && path.startsWith(`${prefix}/monitoring`))
     || (!runtimesOK && path.startsWith(`${prefix}/runtimes`))
     || (!servicesOK && path.startsWith(`${prefix}/services`))
     || (!cronsOK && path.startsWith(`${prefix}/cron`))
+    || (!firewallOK && path.startsWith(`${prefix}/firewall`))
   if (blocked) {
     navigateTo(prefix, { replace: true })
   }

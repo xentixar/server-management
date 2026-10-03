@@ -21,7 +21,9 @@ export const Ability = {
   ServicesView: 'organization.servers.services.view',
   ServicesManage: 'organization.servers.services.manage',
   CronsView: 'organization.servers.crons.view',
-  CronsManage: 'organization.servers.crons.manage'
+  CronsManage: 'organization.servers.crons.manage',
+  FirewallView: 'organization.servers.firewall.view',
+  FirewallManage: 'organization.servers.firewall.manage'
 } as const
 
 export type Ability = typeof Ability[keyof typeof Ability]

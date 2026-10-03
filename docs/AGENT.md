@@ -76,10 +76,11 @@ Header: `Authorization: Bearer <SERVER_TOKEN>`, `X-Agent-Protocol: 1`.
 | `service.control` | `uid`, `name`, `action` (`start`\|`stop`\|`restart`\|`status`) | `supervisorctl` action; return status + stdout/stderr tails. |
 | `cron.sync` | `entries[{uid,schedule,command,user,timezone,enabled}]` | Validate 5-field schedules; rewrite `/etc/cron.d/sa` (with `CRON_TZ` per entry). Each command appends stdout/stderr to `/var/log/sa/cron-<uid>.log`. |
 | `cron.logs` | `uid` | Tail last ~100 lines of that log file; return via `secrets.log_tail`. |
+| `firewall.sync` | `ssh_port`, `rules[{uid,action,protocol,port_start,port_end,source,enabled,…}]` | Ensure iptables chain `SA-FW` (jump from `INPUT`); flush and rewrite rules. Always ACCEPT established/related, loopback, and `ssh_port`/tcp. Persist to `/etc/server-agent/firewall.v4` + enable `server-agent-firewall.service`. |
 
 Catalog (API): PHP `8.1`–`8.5`, Node `18`/`20`/`22`/`24`. Inventory on server: `{ php: { default, versions[{version,status}] }, node: {...}, addons[] }` with status `installed` \| `installing` \| `failed`.
 
-Org routes (JWT): `POST .../servers/:id/provision`, `GET/POST .../runtimes`, `GET .../runtimes/catalog`, `PATCH .../runtimes/default`, `GET/POST/PATCH/DELETE .../services`, `POST .../services/:id/control`, `GET/POST/PATCH/DELETE .../crons`, `GET .../jobs/:job`.
+Org routes (JWT): `POST .../servers/:id/provision`, `GET/POST .../runtimes`, `GET .../runtimes/catalog`, `PATCH .../runtimes/default`, `GET/POST/PATCH/DELETE .../services`, `POST .../services/:id/control`, `GET/POST/PATCH/DELETE .../crons`, `GET/POST/PATCH/DELETE .../firewall/rules`, `POST .../firewall/sync`, `GET .../jobs/:job`.
 
 Agent package layout:
 
@@ -91,7 +92,7 @@ agent/
   internal/client/        # HTTP
   internal/loop/          # heartbeat + poll
   internal/metrics/       # host CPU/mem/disk/load for heartbeat
-  internal/executor/      # job handlers (ping, provision, runtimes, services, cron)
+  internal/executor/      # job handlers (ping, provision, runtimes, services, cron, firewall)
 ```
 
 Add capabilities by registering handlers in `executor` (fail closed for unknown kinds). Rebuild/redeploy the agent binary after new kinds land.

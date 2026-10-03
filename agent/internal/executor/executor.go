@@ -37,6 +37,7 @@ func Default() *Executor {
 		"service.control":      handleServiceControl,
 		"cron.sync":            handleCronSync,
 		"cron.logs":            handleCronLogs,
+		"firewall.sync":        handleFirewallSync,
 	})
 }
 

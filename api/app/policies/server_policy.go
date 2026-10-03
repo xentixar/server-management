@@ -46,3 +46,11 @@ func (ServerPolicy) ViewCrons(m models.OrganizationMember) bool {
 func (ServerPolicy) ManageCrons(m models.OrganizationMember) bool {
 	return Allows(m, constants.CronsManage)
 }
+
+func (ServerPolicy) ViewFirewall(m models.OrganizationMember) bool {
+	return Allows(m, constants.FirewallView)
+}
+
+func (ServerPolicy) ManageFirewall(m models.OrganizationMember) bool {
+	return Allows(m, constants.FirewallManage)
+}

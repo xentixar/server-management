@@ -62,8 +62,60 @@ func (AgentJob) Enqueue(ctx context.Context, serverID uint, kind string, payload
 	return job, nil
 }
 
+// staleJobAfter is how long a job may stay "running" before we assume the agent died.
+func staleJobAfter(kind string) time.Duration {
+	switch kind {
+	case constants.JobKindServerProvision,
+		constants.JobKindRuntimePHPInstall,
+		constants.JobKindRuntimeNodeInstall:
+		return 20 * time.Minute
+	default:
+		return 2 * time.Minute
+	}
+}
+
+// ReclaimStaleRunning fails jobs stuck in running (agent crash / orphan process).
+func (AgentJob) ReclaimStaleRunning(ctx context.Context, serverID uint) error {
+	db := config.GetDatabase().WithContext(ctx)
+	var jobs []AgentJob
+	if err := db.Where("server_id = ? AND status = ?", serverID, constants.JobStatusRunning).Find(&jobs).Error; err != nil {
+		return err
+	}
+	if len(jobs) == 0 {
+		return nil
+	}
+	var server Server
+	if err := db.First(&server, serverID).Error; err != nil {
+		server = Server{Model: gorm.Model{ID: serverID}}
+	}
+	now := time.Now().UTC()
+	for i := range jobs {
+		if jobs[i].ClaimedAt == nil {
+			continue
+		}
+		if now.Sub(jobs[i].ClaimedAt.UTC()) < staleJobAfter(jobs[i].Kind) {
+			continue
+		}
+		jobs[i].Status = constants.JobStatusFailed
+		jobs[i].Message = "job timed out (agent did not report a result)"
+		jobs[i].ExitCode = 1
+		jobs[i].FinishedAt = &now
+		if err := db.Model(&jobs[i]).Updates(map[string]any{
+			"status":      jobs[i].Status,
+			"message":     jobs[i].Message,
+			"exit_code":   jobs[i].ExitCode,
+			"finished_at": jobs[i].FinishedAt,
+		}).Error; err != nil {
+			return err
+		}
+		_ = server.ApplyJobResult(ctx, jobs[i], false, nil)
+	}
+	return nil
+}
+
 // ClaimNext marks the oldest pending job for the server as running.
 func (AgentJob) ClaimNext(ctx context.Context, serverID uint) (*AgentJob, error) {
+	_ = (AgentJob{}).ReclaimStaleRunning(ctx, serverID)
 	db := config.GetDatabase()
 
 	var job AgentJob
@@ -124,6 +176,7 @@ func (AgentJob) HasOpenKinds(ctx context.Context, serverID uint, kinds ...string
 	if len(kinds) == 0 {
 		return false, nil
 	}
+	_ = (AgentJob{}).ReclaimStaleRunning(ctx, serverID)
 	var count int64
 	err := config.GetDatabase().WithContext(ctx).
 		Model(&AgentJob{}).

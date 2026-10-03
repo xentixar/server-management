@@ -35,6 +35,8 @@ var RolePermissions = map[string][]string{
 		ServicesManage,
 		CronsView,
 		CronsManage,
+		FirewallView,
+		FirewallManage,
 	},
 	ViewerRole: {
 		OrganizationList,
@@ -46,6 +48,7 @@ var RolePermissions = map[string][]string{
 		RuntimesView,
 		ServicesView,
 		CronsView,
+		FirewallView,
 	},
 }
 

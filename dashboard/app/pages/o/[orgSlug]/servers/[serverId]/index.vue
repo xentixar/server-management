@@ -140,6 +140,9 @@ function copySecret(value: string) {
 }
 
 function applyJob(job: AgentJob | null | undefined) {
+  if (job && job.kind !== 'server.provision') {
+    return
+  }
   activeJob.value = job ?? null
 }
 
@@ -539,7 +542,7 @@ async function onProvision() {
       </div>
 
       <div
-        v-if="activeJob && (activeJob.status === 'pending' || activeJob.status === 'running')"
+        v-if="activeJob?.kind === 'server.provision' && (activeJob.status === 'pending' || activeJob.status === 'running')"
         class="border-default bg-elevated/40 rounded-md border px-3 py-2"
       >
         <p class="text-highlighted text-xs font-medium">
@@ -548,7 +551,7 @@ async function onProvision() {
         <pre class="text-muted mt-1 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-xs">{{ jobSummary(activeJob) }}</pre>
       </div>
       <UAlert
-        v-if="activeJob?.status === 'failed' && activeJob.message"
+        v-if="activeJob?.kind === 'server.provision' && activeJob.status === 'failed' && activeJob.message"
         color="error"
         variant="subtle"
         icon="i-lucide-circle-alert"

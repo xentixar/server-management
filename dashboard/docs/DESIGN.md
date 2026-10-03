@@ -55,7 +55,7 @@ When viewing `/servers/:serverId/*`, show secondary nav in `UDashboardToolbar` (
 | Services | Background processes |
 | Cron | Scheduled jobs |
 | Logs | Server-level logs |
-| Firewall | Network rules |
+| Firewall | Server inbound rules (`/servers/:id/firewall`) |
 | Settings | SSH metadata, maintenance, decommission |
 
 Breadcrumb: `{Org} / Servers / {hostname} / {tab}`.

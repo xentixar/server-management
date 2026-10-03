@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -72,6 +73,27 @@ func runShellEnv(ctx context.Context, extraEnv []string, script string) (string,
 }
 
 func hasCommand(name string) bool {
-	_, err := exec.LookPath(name)
-	return err == nil
+	return findBinary(name) != ""
+}
+
+func findBinary(name string) string {
+	if name == "" {
+		return ""
+	}
+	if filepath.IsAbs(name) {
+		if st, err := os.Stat(name); err == nil && !st.IsDir() {
+			return name
+		}
+		return ""
+	}
+	if p, err := exec.LookPath(name); err == nil {
+		return p
+	}
+	for _, dir := range []string{"/usr/sbin", "/sbin", "/usr/local/sbin", "/usr/bin", "/bin", "/usr/local/bin"} {
+		p := filepath.Join(dir, name)
+		if st, err := os.Stat(p); err == nil && !st.IsDir() {
+			return p
+		}
+	}
+	return ""
 }
