@@ -25,6 +25,10 @@ func ServerResource(data models.Server) map[string]any {
 	if data.ProvisionStatus == "" {
 		data.ProvisionStatus = "none"
 	}
+	timezone := data.Timezone
+	if timezone == "" {
+		timezone = "UTC"
+	}
 
 	return map[string]any{
 		"id":                    data.ID,
@@ -35,6 +39,7 @@ func ServerResource(data models.Server) map[string]any {
 		"auth_method":           data.AuthenticationMethod,
 		"has_key":               data.PrivateKey != "",
 		"region":                data.Region,
+		"timezone":              timezone,
 		"labels":                labels,
 		"notes":                 data.Notes,
 		"agent":                 data.EffectiveAgentStatus(),

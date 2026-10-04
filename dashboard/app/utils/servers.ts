@@ -12,6 +12,7 @@ export interface Server {
   authMethod: SshAuthMethod
   hasKeyUploaded: boolean
   region?: string
+  timezone: string
   labels: string[]
   notes?: string
   agent: AgentStatus
@@ -40,9 +41,12 @@ export interface CreateServerInput {
   passphrase?: string
   password?: string
   region?: string
+  timezone?: string
   labels: string[]
   notes?: string
 }
+
+export type UpdateServerInput = CreateServerInput
 
 export interface ServerApi {
   id: number
@@ -53,6 +57,7 @@ export interface ServerApi {
   auth_method: SshAuthMethod
   has_key: boolean
   region?: string
+  timezone?: string
   labels: string[]
   notes?: string
   agent: AgentStatus
@@ -81,6 +86,7 @@ export function mapServer(data: ServerApi): Server {
     authMethod: data.auth_method,
     hasKeyUploaded: data.has_key,
     region: data.region || undefined,
+    timezone: data.timezone || 'UTC',
     labels: data.labels ?? [],
     notes: data.notes || undefined,
     agent: data.agent,
@@ -105,4 +111,12 @@ export function agentBadgeColor(agent: AgentStatus) {
     return 'warning' as const
   }
   return 'error' as const
+}
+
+export function looksLikeHostHostname(name: string): boolean {
+  const v = name.trim()
+  if (!v || v.length > 253) {
+    return false
+  }
+  return /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i.test(v)
 }

@@ -113,10 +113,10 @@ const xDomain = computed<[number, number]>(() => {
   const dataSpan = Math.max(0, dataMax - dataMin)
 
   // Sparse history: zoom to samples so the line fills the chart (not a 1px spike on the right).
+  // Keep pad tight - a 60s floor made ~90s of heartbeats look like a floating blob.
   if (!rangeSpan || dataSpan < rangeSpan * 0.35) {
-    const pad = Math.max(30_000, dataSpan * 0.08, 60_000)
-    const midPad = dataSpan === 0 ? 60_000 : pad
-    return [dataMin - midPad, dataMax + midPad]
+    const pad = dataSpan === 0 ? 60_000 : Math.max(5_000, dataSpan * 0.08)
+    return [dataMin - pad, dataMax + pad]
   }
 
   return [rangeFrom!, rangeTo!]
@@ -213,8 +213,9 @@ const loadSeries = computed<MetricChartSeries<ChartRow>[]>(() => [{
 const loadYDomain = computed<[number, number]>(() => {
   const vals = chartRows.value.flatMap(r => [r.load1, r.load5, r.load15])
     .filter((v): v is number => v != null && Number.isFinite(v))
-  const peak = vals.length ? Math.max(...vals) : 1
-  return [0, Math.max(1, peak * 1.25)]
+  const peak = vals.length ? Math.max(...vals) : 0
+  // Idle hosts sit near 0.0x; a forced 0–1 domain flattens the line into the axis.
+  return [0, Math.max(0.25, peak * 1.5)]
 })
 
 function tipCpu(d: ChartRow) {

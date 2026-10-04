@@ -23,4 +23,5 @@ const (
 	JobKindCronLogs       = "cron.logs"
 	JobKindFirewallSync   = "firewall.sync"
 	JobKindSshKeySync     = "ssh_key.sync"
+	JobKindServerSettingsSync = "server.settings.sync"
 )

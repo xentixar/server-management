@@ -86,6 +86,13 @@ const links = computed(() => {
       disabled: !ready
     })
   }
+  if (canViewServers.value) {
+    items.push({
+      label: 'Settings',
+      icon: 'i-lucide-settings',
+      to: `${base}/settings`
+    })
+  }
   return [items]
 })
 
@@ -108,6 +115,7 @@ watch([() => route.path, provisioned, canViewServers, canViewRuntimes, canViewSe
     || (!cronsOK && path.startsWith(`${prefix}/cron`))
     || (!firewallOK && path.startsWith(`${prefix}/firewall`))
     || (!sshKeysOK && path.startsWith(`${prefix}/ssh-keys`))
+    || (!serversOK && path.startsWith(`${prefix}/settings`))
   if (blocked) {
     navigateTo(prefix, { replace: true })
   }

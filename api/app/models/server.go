@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"api/app/constants"
@@ -24,6 +25,7 @@ type Server struct {
 	Passphrase           string `gorm:"type:text"`
 	Password             string `gorm:"type:text"`
 	Region               string
+	Timezone             string   `gorm:"type:varchar(64);not null;default:UTC"`
 	Labels               []string `gorm:"serializer:json"`
 	Notes                string   `gorm:"type:text"`
 	AgentStatus          string   `gorm:"type:varchar(20);not null;default:pending"`
@@ -80,6 +82,9 @@ func (s *Server) Create(ctx context.Context) error {
 	}
 	if s.SSHPort == 0 {
 		s.SSHPort = 22
+	}
+	if s.Timezone == "" {
+		s.Timezone = "UTC"
 	}
 	if s.Labels == nil {
 		s.Labels = []string{}
@@ -140,10 +145,21 @@ func (s *Server) Update(ctx context.Context) error {
 	if s.ProvisionStatus != "" && !constants.IsValidProvisionStatus(s.ProvisionStatus) {
 		return errors.New("invalid provision status")
 	}
+	if s.Timezone == "" {
+		s.Timezone = "UTC"
+	}
 	s.Runtimes.Normalize()
 
 	_, err := gorm.G[Server](config.GetDatabase()).Where("id = ?", s.ID).Updates(ctx, *s)
 	return err
+}
+
+func SettingsSyncPayload(hostname, timezone string) map[string]any {
+	timezone = helpers.NormalizeTimezone(timezone)
+	return map[string]any{
+		"hostname": strings.TrimSpace(hostname),
+		"timezone": timezone,
+	}
 }
 
 func (s *Server) SaveProvision(ctx context.Context) error {

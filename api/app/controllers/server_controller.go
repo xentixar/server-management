@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"api/app/constants"
+	"api/app/helpers"
 	"api/app/models"
 	"api/app/policies"
 	"api/app/provision"
@@ -62,6 +63,77 @@ func (ServerController) TestConnection(ctx *gin.Context) {
 	if !bindJSON(ctx, &req) {
 		return
 	}
+	if !validateServerAuth(ctx, req.AuthenticationMethod, req.PrivateKey, req.Password, true) {
+		return
+	}
+
+	result := provision.TestConnection(sshTarget(req.ServerSSHFields))
+	if !result.OK {
+		respond(ctx).fail("SSH connection failed", gin.H{
+			"ok":      false,
+			"message": result.Message,
+		}, 422)
+		return
+	}
+
+	respond(ctx).ok("SSH connection successful", gin.H{
+		"ok":      true,
+		"message": result.Message,
+	}, 200)
+}
+
+// TestServerConnection tests SSH using the form body, falling back to stored secrets when blank.
+func (ServerController) TestServerConnection(ctx *gin.Context) {
+	organizationID, ok := uintParam(ctx, "organization", "Invalid organization ID")
+	if !ok {
+		return
+	}
+	serverID, ok := uintParam(ctx, "server", "Invalid server ID")
+	if !ok {
+		return
+	}
+
+	_, member, ok := requireOrgMember(ctx, organizationID)
+	if !ok {
+		return
+	}
+	if !denyUnless(ctx, (policies.ServerPolicy{}).Update(member)) {
+		return
+	}
+
+	server, err := (models.Server{}).FindByID(ctx, serverID, organizationID)
+	if err != nil {
+		respond(ctx).fail("Server not found", gin.H{}, 404)
+		return
+	}
+
+	var req requests.TestConnectionRequest
+	if !bindJSON(ctx, &req) {
+		return
+	}
+
+	if strings.TrimSpace(req.IPAddress) == "" {
+		req.IPAddress = server.IPAddress
+	}
+	if req.SSHPort == 0 {
+		req.SSHPort = server.SSHPort
+	}
+	if strings.TrimSpace(req.SSHUser) == "" {
+		req.SSHUser = server.SSHUser
+	}
+	if strings.TrimSpace(req.AuthenticationMethod) == "" {
+		req.AuthenticationMethod = server.AuthenticationMethod
+	}
+	if strings.TrimSpace(req.PrivateKey) == "" {
+		req.PrivateKey = server.PrivateKey
+	}
+	if strings.TrimSpace(req.Passphrase) == "" {
+		req.Passphrase = server.Passphrase
+	}
+	if strings.TrimSpace(req.Password) == "" {
+		req.Password = server.Password
+	}
+
 	if !validateServerAuth(ctx, req.AuthenticationMethod, req.PrivateKey, req.Password, true) {
 		return
 	}
@@ -259,12 +331,39 @@ func (ServerController) Update(ctx *gin.Context) {
 		return
 	}
 
-	server.Hostname = strings.TrimSpace(req.Hostname)
+	hostname := strings.TrimSpace(req.Hostname)
+	timezone := helpers.NormalizeTimezone(req.Timezone)
+	if !helpers.IsValidTimezone(timezone) {
+		respond(ctx).fail("Validation error", gin.H{"timezone": "Invalid timezone"}, 422)
+		return
+	}
+
+	hostChanged := server.Hostname != hostname || helpers.NormalizeTimezone(server.Timezone) != timezone
+	if hostChanged {
+		if !helpers.IsValidHostHostname(hostname) {
+			respond(ctx).fail("Validation error", gin.H{"hostname": "Hostname must be a valid DNS name for the host"}, 422)
+			return
+		}
+		if server.EffectiveAgentStatus() != constants.AgentStatusOnline {
+			respond(ctx).fail("Agent must be online to change hostname or timezone", gin.H{}, 409)
+			return
+		}
+		if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindServerSettingsSync); err != nil {
+			respond(ctx).fail("Failed to check jobs", gin.H{}, 500)
+			return
+		} else if open {
+			respond(ctx).fail("A settings sync job is already in progress", gin.H{}, 409)
+			return
+		}
+	}
+
+	server.Hostname = hostname
 	server.IPAddress = strings.TrimSpace(req.IPAddress)
 	server.SSHPort = req.SSHPort
 	server.SSHUser = strings.TrimSpace(req.SSHUser)
 	server.AuthenticationMethod = req.AuthenticationMethod
 	server.Region = strings.TrimSpace(req.Region)
+	server.Timezone = timezone
 	server.Labels = req.Labels
 	server.Notes = req.Notes
 
@@ -280,6 +379,24 @@ func (ServerController) Update(ctx *gin.Context) {
 
 	if err := server.Update(ctx); err != nil {
 		respond(ctx).fail("Failed to update server", gin.H{}, 500)
+		return
+	}
+
+	if hostChanged {
+		job, err := (models.AgentJob{}).Enqueue(
+			ctx,
+			server.ID,
+			constants.JobKindServerSettingsSync,
+			models.SettingsSyncPayload(server.Hostname, server.Timezone),
+		)
+		if err != nil {
+			respond(ctx).fail("Failed to enqueue settings sync", gin.H{}, 500)
+			return
+		}
+		respond(ctx).ok("Server update queued", gin.H{
+			"server": resources.ServerResource(server),
+			"job":    resources.AgentJobResource(job),
+		}, 202)
 		return
 	}
 

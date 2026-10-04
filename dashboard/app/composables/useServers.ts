@@ -1,9 +1,11 @@
 import { ApiError } from '~/utils/api'
+import { mapJob, type AgentJob, type AgentJobApi } from '~/utils/runtimes'
 import {
   mapServer,
   type CreateServerInput,
   type Server,
-  type ServerApi
+  type ServerApi,
+  type UpdateServerInput
 } from '~/utils/servers'
 
 function serversState() {
@@ -99,6 +101,14 @@ export function useServers() {
     return res.data
   }
 
+  async function testServerConnection(id: number, input: UpdateServerInput) {
+    const res = await api<{ ok: boolean, message: string }>(orgPath(`/${id}/test-connection`), {
+      method: 'POST',
+      body: sshBody(input)
+    })
+    return res.data
+  }
+
   async function create(input: CreateServerInput) {
     if (servers.value.length >= serverLimit.value) {
       throw new ApiError(
@@ -130,6 +140,59 @@ export function useServers() {
       method: 'POST'
     })
     return res.data
+  }
+
+  async function update(id: number, input: UpdateServerInput): Promise<{ server: Server, job?: AgentJob }> {
+    const body: Record<string, unknown> = {
+      ...sshBody(input),
+      hostname: input.hostname.trim(),
+      region: input.region?.trim() || '',
+      timezone: input.timezone?.trim() || 'UTC',
+      labels: input.labels,
+      notes: input.notes?.trim() || ''
+    }
+
+    const res = await api<ServerApi | { server: ServerApi, job?: AgentJobApi }>(orgPath(`/${id}`), {
+      method: 'PATCH',
+      body
+    })
+
+    const raw = res.data as ServerApi | { server: ServerApi, job?: AgentJobApi }
+    const serverData = 'server' in raw && raw.server ? raw.server : raw as ServerApi
+    const job = 'job' in raw && raw.job ? mapJob(raw.job) : undefined
+    const server = mapServer(serverData)
+    servers.value = servers.value.map(s => (s.id === server.id ? server : s))
+    return { server, job }
+  }
+
+  async function getJob(serverId: number, jobId: string): Promise<AgentJob> {
+    const res = await api<AgentJobApi>(orgPath(`/${serverId}/jobs/${encodeURIComponent(jobId)}`))
+    return mapJob(res.data)
+  }
+
+  async function pollJob(
+    serverId: number,
+    jobId: string,
+    opts?: {
+      intervalMs?: number
+      maxAttempts?: number
+      onTick?: (job: AgentJob) => void
+    }
+  ) {
+    const intervalMs = opts?.intervalMs ?? 2000
+    const maxAttempts = opts?.maxAttempts ?? 90
+    let last: AgentJob | undefined
+    for (let i = 0; i < maxAttempts; i++) {
+      last = await getJob(serverId, jobId)
+      opts?.onTick?.(last)
+      if (last.status === 'succeeded' || last.status === 'failed') {
+        await fetchAll(true)
+        return last
+      }
+      await new Promise(resolve => setTimeout(resolve, intervalMs))
+    }
+    await fetchAll(true)
+    return last
   }
 
   async function remove(id: number) {
@@ -184,8 +247,12 @@ export function useServers() {
     atCapacity,
     fetchAll,
     testConnection,
+    testServerConnection,
     create,
+    update,
     bootstrap,
+    getJob,
+    pollJob,
     remove,
     getById,
     setAgent,

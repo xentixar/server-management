@@ -176,6 +176,10 @@ func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool, secr
 		constants.JobKindCronSync, constants.JobKindCronLogs, constants.JobKindFirewallSync,
 		constants.JobKindSshKeySync:
 		return ApplyProcessJobResult(ctx, job, ok, secrets)
+
+	case constants.JobKindServerSettingsSync:
+		// Host hostname/timezone applied on the agent; panel state already saved before enqueue.
+		return nil
 	}
 
 	return nil

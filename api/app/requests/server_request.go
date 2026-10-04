@@ -32,6 +32,7 @@ type UpdateServerRequest struct {
 	Passphrase           string   `json:"passphrase"`
 	Password             string   `json:"password"`
 	Region               string   `json:"region"`
+	Timezone             string   `json:"timezone"`
 	Labels               []string `json:"labels"`
 	Notes                string   `json:"notes"`
 }

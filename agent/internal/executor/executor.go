@@ -39,6 +39,7 @@ func Default() *Executor {
 		"cron.logs":            handleCronLogs,
 		"firewall.sync":        handleFirewallSync,
 		"ssh_key.sync":         handleSshKeySync,
+		"server.settings.sync": handleServerSettingsSync,
 	})
 }
 
