@@ -14,10 +14,12 @@ func Register(router *gin.RouterGroup) {
 	organizations := controllers.OrganizationController{}
 	members := controllers.OrganizationMemberController{}
 	invites := controllers.OrganizationMemberInviteController{}
+	gitConnections := controllers.OrganizationGitConnectionController{}
 	servers := controllers.ServerController{}
 	agent := controllers.AgentController{}
 
 	router.GET("/health", health.Check)
+	router.GET("/git/oauth/callback/:provider", gitConnections.Callback)
 
 	group := router.Group("/auth")
 	{
@@ -33,6 +35,11 @@ func Register(router *gin.RouterGroup) {
 		group.GET("/:organization", organizations.Get)
 		group.PATCH("/:organization", organizations.Update)
 		group.DELETE("/:organization", organizations.Delete)
+
+		group.GET("/:organization/git-connections", gitConnections.List)
+		group.POST("/:organization/git-connections/:provider/authorize", gitConnections.Authorize)
+		group.DELETE("/:organization/git-connections/:connection", gitConnections.Delete)
+		group.GET("/:organization/git-connections/:connection/repos", gitConnections.ListRepos)
 
 		group.GET("/:organization/members", members.List)
 		group.PATCH("/:organization/members/:member", members.Update)

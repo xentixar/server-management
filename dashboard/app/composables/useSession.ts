@@ -84,6 +84,7 @@ const _useSession = () => {
     clearOrganizations()
     clearMembers()
     clearServers()
+    clearGitConnections()
   }
 
   async function logout() {

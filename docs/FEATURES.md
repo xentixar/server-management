@@ -77,6 +77,14 @@ UI mapping: [dashboard/docs/DESIGN.md](../dashboard/docs/DESIGN.md).
 - Every server, site, deploy, and billable resource carries `organization_id`.
 - UI org switcher maps to `dashboard/app/components/TeamsMenu.vue` (today: mock teams).
 
+### Git provider connections
+
+**Status:** Partial — OAuth connect / disconnect / repo list for GitHub, GitLab.com, and Bitbucket Cloud.
+
+- Org settings **Git** tab: link provider accounts via platform OAuth apps; tokens encrypted at rest (`APP_ENCRYPTION_KEY`).
+- List repositories from a connection (for upcoming site create).
+- Push webhooks, deploy keys, and self-hosted GitLab are **Planned**.
+
 ---
 
 ## 3. Subscription & billing

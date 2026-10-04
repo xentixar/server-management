@@ -12,6 +12,8 @@ export const Ability = {
   InvitesRevoke: 'organization.invites.revoke',
   BillingView: 'organization.billing.view',
   BillingManage: 'organization.billing.manage',
+  GitConnectionsView: 'organization.git_connections.view',
+  GitConnectionsManage: 'organization.git_connections.manage',
   ServersView: 'organization.servers.view',
   ServersCreate: 'organization.servers.create',
   ServersUpdate: 'organization.servers.update',

@@ -107,4 +107,5 @@ Do not keep module-level stub stores for auth-sensitive data; use `useState` so 
 | `/o/:orgSlug/organization` | Gate update/delete |
 | `/o/:orgSlug/organization/members` | Gate invite/role/remove |
 | `/o/:orgSlug/organization/billing` | Gate manage vs view |
+| `/o/:orgSlug/organization/git` | Gate `GitConnectionsView` / `GitConnectionsManage` |
 | `/o/:orgSlug/servers` | List / add / detail; gate with server abilities |

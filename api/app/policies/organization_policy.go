@@ -30,3 +30,11 @@ func (OrganizationPolicy) ViewBilling(m models.OrganizationMember) bool {
 func (OrganizationPolicy) ManageBilling(m models.OrganizationMember) bool {
 	return Allows(m, constants.BillingManage)
 }
+
+func (OrganizationPolicy) ViewGitConnections(m models.OrganizationMember) bool {
+	return Allows(m, constants.GitConnectionsView)
+}
+
+func (OrganizationPolicy) ManageGitConnections(m models.OrganizationMember) bool {
+	return Allows(m, constants.GitConnectionsManage)
+}

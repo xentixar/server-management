@@ -21,7 +21,12 @@ cp .env.example .env
 | `APP_PORT` | yes | e.g. `8080` |
 | `APP_ENV` | yes | e.g. `local` |
 | `DB_*` | yes | Postgres connection |
-| `PUBLIC_API_URL` | yes for bootstrap | Base URL **remote agents** use to call the API. Must be reachable from the VM (LAN IP / hostname). Not `localhost` unless agent runs on the same host. |
+| `PUBLIC_API_URL` | yes for bootstrap | Base URL **remote agents** use to call the API. Must be reachable from the VM (LAN IP / hostname). Not `localhost` unless agent runs on the same host. Also used as the OAuth callback host for git providers. |
+| `PUBLIC_DASHBOARD_URL` | yes for git OAuth | Where the API redirects after a provider OAuth callback (e.g. `http://192.168.1.50:3000`). |
+| `APP_ENCRYPTION_KEY` | yes for git OAuth | 32-byte key, base64-encoded. Generate with `openssl rand -base64 32`. Encrypts org git connection tokens at rest. |
+| `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` | for GitHub connect | OAuth App callback: `{PUBLIC_API_URL}/api/v1/git/oauth/callback/github` |
+| `GITLAB_OAUTH_CLIENT_ID` / `GITLAB_OAUTH_CLIENT_SECRET` | for GitLab.com connect | Callback: `{PUBLIC_API_URL}/api/v1/git/oauth/callback/gitlab` |
+| `BITBUCKET_OAUTH_CLIENT_ID` / `BITBUCKET_OAUTH_CLIENT_SECRET` | for Bitbucket Cloud connect | Callback: `{PUBLIC_API_URL}/api/v1/git/oauth/callback/bitbucket` |
 | `AGENT_BIN_DIR` | no | Default `bin`. Contains `agent-linux-amd64` and/or `agent-linux-arm64`. |
 
 Build agent binaries (from repo root or `api/`):

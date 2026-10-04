@@ -27,6 +27,16 @@ const links = computed(() => {
     })
   }
 
+  if (can(Ability.GitConnectionsView)) {
+    orgChildren.push({
+      label: 'Git',
+      to: orgHref('/organization/git'),
+      onSelect: () => {
+        open.value = false
+      }
+    })
+  }
+
   if (can(Ability.BillingView)) {
     orgChildren.push({
       label: 'Billing',

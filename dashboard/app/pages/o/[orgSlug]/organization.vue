@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
+const route = useRoute()
 const { orgHref } = useOrganizations()
 
 const links = computed(() => [[{
@@ -13,10 +14,21 @@ const links = computed(() => [[{
   icon: 'i-lucide-users',
   to: orgHref('/organization/members')
 }, {
+  label: 'Git',
+  icon: 'i-lucide-git-branch',
+  to: orgHref('/organization/git')
+}, {
   label: 'Billing',
   icon: 'i-lucide-credit-card',
   to: orgHref('/organization/billing')
 }]] satisfies NavigationMenuItem[][])
+
+const bodyClass = computed(() => {
+  const git = route.path.includes('/organization/git')
+  return git
+    ? 'mx-auto flex w-full flex-col gap-4 sm:gap-6 lg:max-w-5xl lg:gap-12'
+    : 'mx-auto flex w-full flex-col gap-4 sm:gap-6 lg:max-w-2xl lg:gap-12'
+})
 </script>
 
 <template>
@@ -41,7 +53,7 @@ const links = computed(() => [[{
     </template>
 
     <template #body>
-      <div class="mx-auto flex w-full flex-col gap-4 sm:gap-6 lg:max-w-2xl lg:gap-12">
+      <div :class="bodyClass">
         <NuxtPage />
       </div>
     </template>

@@ -18,6 +18,9 @@ const (
 	BillingView   = "organization.billing.view"
 	BillingManage = "organization.billing.manage"
 
+	GitConnectionsView   = "organization.git_connections.view"
+	GitConnectionsManage = "organization.git_connections.manage"
+
 	ServersView   = "organization.servers.view"
 	ServersCreate = "organization.servers.create"
 	ServersUpdate = "organization.servers.update"
@@ -53,6 +56,8 @@ var AllAbilities = []string{
 	InvitesRevoke,
 	BillingView,
 	BillingManage,
+	GitConnectionsView,
+	GitConnectionsManage,
 	ServersView,
 	ServersCreate,
 	ServersUpdate,

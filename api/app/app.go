@@ -30,6 +30,8 @@ func Initialize() {
 		&models.Organization{},
 		&models.OrganizationMember{},
 		&models.OrganizationMemberInvite{},
+		&models.OrganizationGitConnection{},
+		&models.GitOAuthState{},
 		&models.Server{},
 		&models.AgentJob{},
 		&models.ServerService{},
