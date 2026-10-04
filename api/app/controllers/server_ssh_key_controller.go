@@ -62,7 +62,7 @@ func (ServerController) CreateSshKey(ctx *gin.Context) {
 		return
 	}
 
-	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindSshKeySync); err != nil {
+	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindSSHKeySync); err != nil {
 		respond(ctx).fail("Failed to check jobs", gin.H{}, http.StatusInternalServerError)
 		return
 	} else if open {
@@ -126,7 +126,7 @@ func (ServerController) UpdateSshKey(ctx *gin.Context) {
 		return
 	}
 
-	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindSshKeySync); err != nil {
+	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindSSHKeySync); err != nil {
 		respond(ctx).fail("Failed to check jobs", gin.H{}, http.StatusInternalServerError)
 		return
 	} else if open {
@@ -165,7 +165,7 @@ func (ServerController) DeleteSshKey(ctx *gin.Context) {
 		return
 	}
 
-	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindSshKeySync); err != nil {
+	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindSSHKeySync); err != nil {
 		respond(ctx).fail("Failed to check jobs", gin.H{}, http.StatusInternalServerError)
 		return
 	} else if open {
@@ -198,7 +198,7 @@ func (ServerController) SyncSshKeys(ctx *gin.Context) {
 		return
 	}
 
-	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindSshKeySync); err != nil {
+	if open, err := (models.AgentJob{}).HasOpen(ctx, server.ID, constants.JobKindSSHKeySync); err != nil {
 		respond(ctx).fail("Failed to check jobs", gin.H{}, http.StatusInternalServerError)
 		return
 	} else if open {
@@ -249,7 +249,7 @@ func enqueueSshKeySync(ctx *gin.Context, server models.Server) (models.AgentJob,
 	return (models.AgentJob{}).Enqueue(
 		ctx,
 		server.ID,
-		constants.JobKindSshKeySync,
+		constants.JobKindSSHKeySync,
 		models.SshKeySyncPayload(keys),
 	)
 }

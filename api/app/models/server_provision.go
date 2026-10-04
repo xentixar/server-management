@@ -174,7 +174,7 @@ func (s *Server) ApplyJobResult(ctx context.Context, job AgentJob, ok bool, secr
 
 	case constants.JobKindServiceApply, constants.JobKindServiceRemove, constants.JobKindServiceControl,
 		constants.JobKindCronSync, constants.JobKindCronLogs, constants.JobKindFirewallSync,
-		constants.JobKindSshKeySync:
+		constants.JobKindSSHKeySync:
 		return ApplyProcessJobResult(ctx, job, ok, secrets)
 
 	case constants.JobKindServerSettingsSync:
